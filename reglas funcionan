@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isPolice() { return request.auth != null; }
+
+    function tokenOk(token) {
+      return exists(/databases/$(database)/documents/tokenSessions/$(token))
+        && get(/databases/$(database)/documents/tokenSessions/$(token)).data.revoked == false
+        && request.time < get(/databases/$(database)/documents/tokenSessions/$(token)).data.expiresAt;
+    }
+
+    // Solo policía gestiona tokens
+    match /tokenSessions/{token} {
+      allow read, write: if isPolice();
+    }
+
+    // Predenuncias (docId = token)
+    match /predenuncias/{id} {
+
+      // Policía: control total
+      allow read, create, update, delete: if isPolice();
+
+      // Denunciante: crea/finaliza SOLO su docId==token, para PATRIMONIO/LESIONES y futuros tipos
+      allow create: if tokenOk(id) && isValidFinalPred(id);
+
+      // Denunciante: si permites reintentos/edición antes de que la policía lo toque,
+      // permite update pero estrictamente limitado (sin docText y sin campos raros).
+      allow update: if tokenOk(id) && isValidFinalPred(id)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          "estado","tipo","token","filiacion","hechos","createdAt","finalizedAt"
+        ]);
+    }
+
+    function isValidFinalPred(id){
+      return request.resource.data.keys().hasOnly([
+          "estado","tipo","token","filiacion","hechos","createdAt","finalizedAt","docText","doc","crimeType"
+        ])
+        // Estado final
+        && request.resource.data.estado == "FINALIZADA"
+        // Identidad del “expediente”: el token va dentro y el docId es el token
+        && request.resource.data.token == id
+        // Tipo delictivo: acepta PATRIMONIO/LESIONES y futuros (no lo bloquees)
+        && request.resource.data.tipo is string
+        // Estructura mínima
+        && request.resource.data.filiacion is map
+        && request.resource.data.hechos is map
+        // PROHIBIDO que el denunciante escriba docText (policía sí, por update)
+        && !("docText" in request.resource.data);
+    }
+  }
+}
