@@ -191,7 +191,7 @@
       const left = document.createElement("div");
       left.style.fontSize = "12px";
       left.style.color = "#d4dde9";
-      left.textContent = t(lang, "selected_none");
+      left.textContent = "";
 
       const right = document.createElement("div");
       right.style.display = "flex";
@@ -229,8 +229,9 @@
       back.appendChild(box);
       document.body.appendChild(back);
 
-      const initLat = Number.isFinite(+opts.lat) ? +opts.lat : 40.4168;
-      const initLng = Number.isFinite(+opts.lng) ? +opts.lng : -3.7038;
+      // Fallback center: Playa de las Americas (Tenerife)
+      const initLat = Number.isFinite(+opts.lat) ? +opts.lat : 28.0586;
+      const initLng = Number.isFinite(+opts.lng) ? +opts.lng : -16.7299;
 
       const map = L.map(mapEl, {
         zoomControl: true,
