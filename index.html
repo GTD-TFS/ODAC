@@ -1710,6 +1710,8 @@
     $("btnCloseCrime").addEventListener("click", closeCrimeModal);
     $("crimeBack").addEventListener("click", (e) => { if (e.target === $("crimeBack")) closeCrimeModal(); });
 
+    const TOKEN_TTL_MINUTES = 60;
+
     async function generateTokenFor(tipo) {
       tipo = (tipo || "").trim().toUpperCase();
       if (!tipo) return;
@@ -1726,7 +1728,7 @@
           crimeType: tipo,
           revoked: false,
           createdAt: serverTimestamp(),
-          expiresAt: Timestamp.fromMillis(Date.now() + 5 * 60 * 1000)
+          expiresAt: Timestamp.fromMillis(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000)
         }, { merge: false });
       } catch (e) {
         console.warn("No se pudo crear tokenSessions/" + token, e);
