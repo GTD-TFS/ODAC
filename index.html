@@ -58,7 +58,7 @@
     .wrap {
       max-width: 100%;
       margin: 0;
-      padding: 22px 16px 26px
+      padding: 86px 16px 120px
     }
 
     .top {
@@ -322,12 +322,25 @@
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 14px
+      margin-bottom: 14px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9000;
+      padding: 10px 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .04));
+      border-bottom: 1px solid rgba(255, 255, 255, .12);
+      box-shadow:
+        0 12px 32px rgba(0, 0, 0, .26),
+        inset 0 1px 0 rgba(255, 255, 255, .06);
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
     }
 
     @media (max-width: 720px) {
       .wrap {
-        padding: 16px 12px 22px
+        padding: 76px 12px 116px
       }
 
       textarea {
@@ -421,7 +434,24 @@
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
-      margin-top: auto
+      margin-top: auto;
+      position: fixed !important;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9500;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      border-radius: 0;
+      border-top: 1px solid rgba(255, 255, 255, .12);
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .04));
+      box-shadow:
+        0 -12px 32px rgba(0, 0, 0, .26),
+        inset 0 1px 0 rgba(255, 255, 255, .06);
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
     }
 
     .hint {
@@ -434,6 +464,29 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 10px
+    }
+
+    .toastOk {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(.96);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 12000;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      background: rgba(8, 20, 35, .96);
+      color: #d6b06a;
+      font-size: 28px;
+      font-weight: 900;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toastOk.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
     }
 
     /* ===== LOGIN GATE (password manager friendly) ===== */
@@ -615,7 +668,8 @@
       display: none !important;
     }
 
-    /* En ENTRADAS ocultamos PERSISTIR (solo lista/descarga) */
+    /* En REGISTROS/ENTRADAS ocultamos PERSISTIR */
+    body.regMode #btnPersist,
     body.inboxMode #btnPersist {
       display: none !important;
     }
@@ -735,16 +789,16 @@
 </div>
           <textarea id="area"></textarea>
 
-          <div class="foot">
-            <button class="btn pill green" id="btnPersist" type="button" disabled>PERSISTIR</button>
-            <button class="btn pill blue" id="btnDownload" disabled>DESCARGAR</button>
-          </div>
-
           <div class="status" id="workStatus"></div>
         </div>
       </div>
     </div>
+    <div class="foot">
+      <button class="btn pill green" id="btnPersist" type="button" disabled>PERSISTIR</button>
+      <button class="btn pill blue" id="btnDownload" disabled>DESCARGAR</button>
+    </div>
   </div>
+  <div id="persistToast" class="toastOk" aria-live="polite">👍🏼</div>
 
 
   <!-- Modal GRUPO DELICTIVO (selector) -->
@@ -859,6 +913,7 @@
       updateDoc,
       deleteDoc,
       getDoc,
+      getDocs,
       Timestamp,
       collection,
       query,
@@ -888,6 +943,18 @@
     }
     async function clipWrite(t) { await navigator.clipboard.writeText(t); }
     async function clipRead() { return await navigator.clipboard.readText(); }
+    let __persistToastTimer = null;
+    function showPersistToast() {
+      const el = $("persistToast");
+      if (!el) return;
+      try {
+        clearTimeout(__persistToastTimer);
+        el.classList.add("show");
+        __persistToastTimer = setTimeout(() => {
+          el.classList.remove("show");
+        }, 1500);
+      } catch (_) { }
+    }
     function sanitizeFileName(s) {
       return (s || "").trim()
         .replace(/[\\\/:*?"<>|]+/g, " ")
@@ -937,6 +1004,120 @@
       const base = new URL("./", location.href).href;
       const page = await resolveDenunciantePage(tipo);
       return base + page + "?tipo=" + encodeURIComponent(tipo) + "&token=" + encodeURIComponent(token);
+    }
+
+    async function purgeExpiredTokens() {
+      let totalDeleted = 0;
+      const nowTs = Timestamp.now();
+      while (true) {
+        const q = query(
+          collection(db, "tokenSessions"),
+          where("expiresAt", "<", nowTs),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        totalDeleted += snap.size;
+        if (snap.size < 200) break;
+      }
+      return totalDeleted;
+    }
+
+    function tsToMs(tsLike) {
+      if (!tsLike) return 0;
+      if (typeof tsLike.toMillis === "function") return Number(tsLike.toMillis() || 0);
+      if (tsLike instanceof Date) return tsLike.getTime();
+      if (typeof tsLike === "number") return tsLike;
+      return 0;
+    }
+
+    function getRegistroExpiryMs(r) {
+      return tsToMs(r && r.createdAt) + (60 * 60 * 1000);
+    }
+
+    function buildRegistroPublicLabel(r) {
+      const src = String((r && (r.labelPublico || r.filename || r.id)) || "")
+        .replace(/\\.json$/i, "")
+        .replace(/^registro[\\s_-]*/i, "")
+        .replace(/[_-]+/g, " ")
+        .trim();
+      const parts = src.split(/\\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0].charAt(0).toUpperCase()}. ${parts[1].toUpperCase()}`;
+      }
+      return src || String((r && r.id) || "REGISTRO");
+    }
+
+    function fmtCountdown(remMs) {
+      const s = Math.max(0, Math.floor(remMs / 1000));
+      const m = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${m}:${ss}`;
+    }
+
+    function updateRegistroCountdowns() {
+      const now = Date.now();
+      document.querySelectorAll("[data-reg-exp]").forEach((el) => {
+        const expMs = Number(el.getAttribute("data-reg-exp") || "0");
+        el.textContent = `caducidad ${fmtCountdown(expMs - now)}`;
+      });
+    }
+
+    async function purgeOldPredenuncias(days = 7) {
+      let totalDeleted = 0;
+      const cutoffMs = Date.now() - (days * 24 * 60 * 60 * 1000);
+      const cutoffTs = Timestamp.fromMillis(cutoffMs);
+      while (true) {
+        const q = query(
+          collection(db, "predenuncias"),
+          where("finalizedAt", "<", cutoffTs),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        totalDeleted += snap.size;
+        if (snap.size < 200) break;
+      }
+      return totalDeleted;
+    }
+
+    async function purgeOldRegistros(hours = 1) {
+      let totalDeleted = 0;
+      const cutoffMs = Date.now() - (hours * 60 * 60 * 1000);
+      const cutoffTs = Timestamp.fromMillis(cutoffMs);
+      while (true) {
+        const q = query(
+          collection(db, "registros"),
+          where("createdAt", "<", cutoffTs),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        totalDeleted += snap.size;
+        if (snap.size < 200) break;
+      }
+      return totalDeleted;
+    }
+
+    async function autoPurgeTokensIfDue() {
+      const KEY = "odac_last_auto_purge_ms";
+      const nowMs = Date.now();
+      const lastMs = Number(localStorage.getItem(KEY) || "0");
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      if (lastMs > 0 && (nowMs - lastMs) < DAY_MS) return;
+      try {
+        const tokensDeleted = await purgeExpiredTokens();
+        const predsDeleted = await purgeOldPredenuncias(7);
+        const regsDeleted = await purgeOldRegistros(1);
+        localStorage.setItem(KEY, String(nowMs));
+        const status = $("workStatus");
+        if (status) status.textContent = `Limpieza automática: tokens ${tokensDeleted}, predenuncias ${predsDeleted}, registros ${regsDeleted}`;
+      } catch (_) {
+        // Silencioso: no bloquea login ni uso del panel
+      }
     }
 
     /* ========= ESTADO ========= */
@@ -1048,6 +1229,9 @@
       p.setAttribute("aria-selected", isP ? "true" : "false");
       r.setAttribute("aria-selected", isR ? "true" : "false");
       i.setAttribute("aria-selected", isI ? "true" : "false");
+
+      const qr = $("btnGenToken");
+      if (qr) qr.style.display = isP ? "" : "none";
     }
 
     function renderCurrentList() {
@@ -1107,8 +1291,15 @@
 
         const left = document.createElement("div");
         left.className = "left";
-        left.innerHTML = `<div class="t">🦸🏿‍♂️ ${escapeHtml(r.filename)}</div>`;
+        left.innerHTML = `<div class="t">🐖 ${escapeHtml(buildRegistroPublicLabel(r))}</div>`;
         el.appendChild(left);
+
+        const cd = document.createElement("span");
+        cd.className = "mono";
+        cd.style.opacity = ".85";
+        cd.style.marginRight = "8px";
+        cd.setAttribute("data-reg-exp", String(getRegistroExpiryMs(r)));
+        el.appendChild(cd);
 
         const del = document.createElement("button");
         del.type = "button";
@@ -1137,6 +1328,7 @@
         el.addEventListener("click", () => selectRegistro(r.id));
         box.appendChild(el);
       }
+      updateRegistroCountdowns();
     }
 
     function selectRegistro(id) {
@@ -1238,6 +1430,25 @@
         left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div>`;
         el.appendChild(left);
 
+        const ttl = document.createElement("span");
+        ttl.className = "mono";
+        ttl.style.opacity = ".8";
+        ttl.style.marginRight = "8px";
+        let ttlText = "--/--";
+        try {
+          const fin = d.finalizedAt && typeof d.finalizedAt.toDate === "function"
+            ? d.finalizedAt.toDate()
+            : (d.finalizedAt instanceof Date ? d.finalizedAt : null);
+          if (fin) {
+            const exp = new Date(fin.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const dd = String(exp.getDate()).padStart(2, "0");
+            const mm = String(exp.getMonth() + 1).padStart(2, "0");
+            ttlText = `${dd}/${mm}`;
+          }
+        } catch (_) { }
+        ttl.textContent = `⌛️${ttlText}`;
+        el.appendChild(ttl);
+
         const del = document.createElement("button");
         del.type = "button";
         del.className = "iconBtn";
@@ -1312,8 +1523,8 @@
       if (state.view === "doc") state.dirtyDoc = true;
       refreshActions();
     });
-    $("btnViewJson").addEventListener("click", () => { setView("json"); try { $("area")?.focus(); } catch (_) { } });
-    $("btnViewDoc").addEventListener("click", () => { setView("doc"); try { $("area")?.focus(); } catch (_) { } });
+    $("btnViewJson").addEventListener("click", () => { setView("json"); });
+    $("btnViewDoc").addEventListener("click", () => { setView("doc"); });
 
     $("btnPersist").addEventListener("click", async () => {
       const raw = $("area").value || "";
@@ -1354,6 +1565,7 @@
           $("workStatus").textContent = "";
           renderSelectedIntoArea();
           refreshActions();
+          showPersistToast();
           return;
         }
 
@@ -1378,6 +1590,7 @@
 
         $("workStatus").textContent = "";
         refreshActions();
+        showPersistToast();
 
       } catch (err) {
         const m = (err && err.message) ? err.message : String(err);
@@ -1768,6 +1981,8 @@
     let __unsubPred = null;
     let __unsubRegs = null;
     let __unsubInbox = null;
+    let __regsCountdownTimer = null;
+    let __housekeepingTimer = null;
     const gate = document.getElementById("loginGate");
     const loginForm = document.getElementById("loginForm");
     const loginStatus = document.getElementById("loginStatus");
@@ -1817,10 +2032,19 @@
         state.userUid = user.uid || null;
         if (!__unsubRegs && state.userUid) __unsubRegs = startRegistrosListener(state.userUid);
         if (!__unsubInbox && state.userUid) __unsubInbox = startInboxListener(state.userUid);
+        await autoPurgeTokensIfDue();
+        if (!__regsCountdownTimer) __regsCountdownTimer = setInterval(updateRegistroCountdowns, 1000);
+        if (!__housekeepingTimer) {
+          __housekeepingTimer = setInterval(async () => {
+            try { await purgeOldRegistros(1); } catch (_) { }
+          }, 5 * 60 * 1000);
+        }
       } else {
         if (__unsubPred) { try { __unsubPred(); } catch (_) { } __unsubPred = null; }
         if (__unsubRegs) { try { __unsubRegs(); } catch (_) { } __unsubRegs = null; }
         if (__unsubInbox) { try { __unsubInbox(); } catch (_) { } __unsubInbox = null; }
+        if (__regsCountdownTimer) { try { clearInterval(__regsCountdownTimer); } catch (_) { } __regsCountdownTimer = null; }
+        if (__housekeepingTimer) { try { clearInterval(__housekeepingTimer); } catch (_) { } __housekeepingTimer = null; }
         state.selected = null;
         state.denuncias = [];
         state.view = "json";
