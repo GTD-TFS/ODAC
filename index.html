@@ -132,8 +132,8 @@
     }
 
     .qrBtn {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 14px;
       /* CUADRADO redondeado */
       border: 1px solid rgba(253, 253, 253, 0.965);
@@ -981,41 +981,30 @@
       if (!name) return "registro.json";
       return /\.json$/i.test(name) ? name : (name + ".json");
     }
-    async function resolveDenunciantePage(tipo) {
+    function resolveDenunciantePage(tipo) {
       const C = {
-        "HURTO_RVI": ["denunciante_hurto_rvi.html", "hurto_rvi.html", "denunciante.html"],
-        "ROBO_FUERZA": ["robo_fuerza.html", "denunciante_robo_fuerza.html", "denunciante.html"],
-        "PATRIMONIO": ["denunciante_patrimonio.html", "patrimonio.html", "denunciante.html"],
-        "LESIONES": ["denunciante_lesiones.html", "lesiones.html", "denunciante.html"],
-        "AMENAZAS": ["denunciante_amenazas.html", "amenazas.html", "denunciante.html"],
-        "DAÑOS": ["denunciante_danos.html", "danos.html", "denunciante.html"],
-        "GLOBAL": ["global_esp.html", "denunciante.html"],
-        "GLOBAL INGLES": ["global_en_ui.html", "denunciante.html"],
-        "GLOBAL ALEMAN": ["global_de_ui.html", "denunciante.html"],
-        "GLOBAL ITALIANO": ["global_it_ui.html", "denunciante.html"],
-        "GLOBAL RUSO": ["global_ru_ui.html", "denunciante.html"],
-        "GLOBAL FRANCES": ["global_fr_ui.html", "denunciante.html"],
-        "GLOBAL CHINO": ["global_zh_ui.html", "denunciante.html"],
-        "GLOBAL JAPONES": ["global_ja_ui.html", "denunciante.html"],
+        "HURTO_RVI": "hurto_rvi.html",
+        "ROBO_FUERZA": "robo_fuerza.html",
+        "PATRIMONIO": "denunciante_patrimonio.html",
+        "LESIONES": "lesiones.html",
+        "AMENAZAS": "amenazas.html",
+        "DAÑOS": "danos.html",
+        "GLOBAL": "global_esp.html",
+        "GLOBAL INGLES": "global_en_ui.html",
+        "GLOBAL ALEMAN": "global_de_ui.html",
+        "GLOBAL ITALIANO": "global_it_ui.html",
+        "GLOBAL RUSO": "global_ru_ui.html",
+        "GLOBAL FRANCES": "global_fr_ui.html",
+        "GLOBAL CHINO": "global_zh_ui.html",
+        "GLOBAL JAPONES": "global_ja_ui.html",
       };
-      const base = new URL("./", location.href).href;
-      const list = C[tipo] || ["global_esp.html", "denunciante.html"];
-      for (const page of list) {
-        const url = base + page;
-        try {
-          let r;
-          try { r = await fetch(url, { method: "HEAD", cache: "no-store" }); }
-          catch (_) { r = await fetch(url, { method: "GET", cache: "no-store" }); }
-          if (r && r.ok) return page;
-        } catch (_) { }
-      }
-      return "denunciante.html";
+      return C[tipo] || "global_esp.html";
     }
 
     async function buildDenuncianteLink(tipo, token) {
       tipo = (tipo || "").toString().trim().toUpperCase();
       const base = new URL("./", location.href).href;
-      const page = await resolveDenunciantePage(tipo);
+      const page = resolveDenunciantePage(tipo);
       return base + page + "?tipo=" + encodeURIComponent(tipo) + "&token=" + encodeURIComponent(token);
     }
 

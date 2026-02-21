@@ -1179,7 +1179,11 @@ async function saveFinal(){
 
   }catch(err){
     const m = (err && err.message) ? err.message : String(err);
-    alert("ERROR AL FINALIZAR: " + m);
+    if (err && err.code === "permission-denied") {
+      alert("No hay permisos para finalizar. El enlace puede haber caducado o estar invalidado. Solicite un enlace nuevo.");
+    } else {
+      alert("ERROR AL FINALIZAR: " + m);
+    }
   }
 }
 
