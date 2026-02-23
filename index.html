@@ -1039,7 +1039,7 @@
     }
 
     function getRegistroExpiryMs(r) {
-      return tsToMs(r && r.createdAt) + (60 * 60 * 1000);
+      return tsToMs(r && r.createdAt) + (8 * 60 * 60 * 1000);
     }
     function getInboxExpiryMs(r) {
       const payload = (r && r.payload) || {};
@@ -1083,12 +1083,6 @@
       return src || String((r && r.id) || "REGISTRO");
     }
 
-    function fmtCountdown(remMs) {
-      const s = Math.max(0, Math.floor(remMs / 1000));
-      const m = String(Math.floor(s / 60)).padStart(2, "0");
-      const ss = String(s % 60).padStart(2, "0");
-      return `${m}:${ss}`;
-    }
     function fmtCountdownHMS(remMs) {
       const s = Math.max(0, Math.floor(remMs / 1000));
       const h = String(Math.floor(s / 3600)).padStart(2, "0");
@@ -1101,7 +1095,7 @@
       const now = Date.now();
       document.querySelectorAll("[data-reg-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-reg-exp") || "0");
-        el.textContent = `caducidad ${fmtCountdown(expMs - now)}`;
+        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
       });
     }
     function updateInboxCountdowns() {
@@ -1138,7 +1132,7 @@
       return totalDeleted;
     }
 
-    async function purgeOldRegistros(hours = 1) {
+    async function purgeOldRegistros(hours = 8) {
       let totalDeleted = 0;
       const cutoffMs = Date.now() - (hours * 60 * 60 * 1000);
       const cutoffTs = Timestamp.fromMillis(cutoffMs);
@@ -1176,17 +1170,11 @@
     }
 
     async function autoPurgeTokensIfDue() {
-      const KEY = "odac_last_auto_purge_ms";
-      const nowMs = Date.now();
-      const lastMs = Number(localStorage.getItem(KEY) || "0");
-      const DAY_MS = 24 * 60 * 60 * 1000;
-      if (lastMs > 0 && (nowMs - lastMs) < DAY_MS) return;
       try {
         const tokensDeleted = await purgeExpiredTokens();
         const predsDeleted = await purgeOldPredenuncias(8);
-        const regsDeleted = await purgeOldRegistros(1);
+        const regsDeleted = await purgeOldRegistros(8);
         const inboxDeleted = await purgeOldInbox(8);
-        localStorage.setItem(KEY, String(nowMs));
         const status = $("workStatus");
         if (status) status.textContent = `Limpieza automática: tokens ${tokensDeleted}, predenuncias ${predsDeleted}, registros ${regsDeleted}, comparecencias ${inboxDeleted}`;
       } catch (_) {
@@ -1328,13 +1316,24 @@
         const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
+          const createdAt = x.createdAt || null;
+          const expMs = getRegistroExpiryMs({ createdAt });
+          if (expMs > 0 && nowMs >= expMs) {
+            toDelete.push(d.id);
+            return;
+          }
           out.push({
             id: d.id,
             filename: (x.filename || x.name || "registro.json").toString(),
             encJson: (x.encJson || x.enc || x.payload || "").toString(),
-            createdAt: x.createdAt || null
+            createdAt
           });
         });
+
+        if (toDelete.length) {
+          Promise.all(toDelete.map((id) => deleteDoc(doc(db, "registros", id)).catch(() => { })))
+            .catch(() => { });
+        }
 
         state.registros = out;
         if (state.mode === "registros") renderRegistros();
@@ -1436,6 +1435,11 @@
         const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
+          const expMs = getPredenunciaExpiryMs({ finalizedAt: x.finalizedAt || null });
+          if (expMs > 0 && nowMs >= expMs) {
+            toDelete.push(d.id);
+            return;
+          }
 
           // NUEVO: filiación cifrada (Denupol NO descifra). Backward compatible con docs viejos.
           const fPlain = x.filiacion || {};
@@ -1467,6 +1471,11 @@
             finalizedAt: x.finalizedAt || null
           });
         });
+
+        if (toDelete.length) {
+          Promise.all(toDelete.map((id) => deleteDoc(doc(db, "predenuncias", id)).catch(() => { })))
+            .catch(() => { });
+        }
 
         state.denuncias = out;
         renderDenuncias();
@@ -2017,7 +2026,7 @@
     $("btnCloseCrime").addEventListener("click", closeCrimeModal);
     $("crimeBack").addEventListener("click", (e) => { if (e.target === $("crimeBack")) closeCrimeModal(); });
 
-    const TOKEN_TTL_MINUTES = 60;
+    const TOKEN_TTL_MINUTES = 480;
 
     async function generateTokenFor(tipo) {
       tipo = (tipo || "").trim().toUpperCase();
@@ -2136,9 +2145,11 @@
         }
         if (!__housekeepingTimer) {
           __housekeepingTimer = setInterval(async () => {
-            try { await purgeOldRegistros(1); } catch (_) { }
+            try { await purgeExpiredTokens(); } catch (_) { }
+            try { await purgeOldPredenuncias(8); } catch (_) { }
+            try { await purgeOldRegistros(8); } catch (_) { }
             try { await purgeOldInbox(8); } catch (_) { }
-          }, 5 * 60 * 1000);
+          }, 60 * 1000);
         }
       } else {
         if (__unsubPred) { try { __unsubPred(); } catch (_) { } __unsubPred = null; }
