@@ -1049,6 +1049,12 @@
       if (created <= 0) return 0;
       return created + (8 * 60 * 60 * 1000);
     }
+    function getPredenunciaExpiryMs(d) {
+      const fin = d && d.finalizedAt;
+      const finMs = tsToMs(fin);
+      if (finMs <= 0) return 0;
+      return finMs + (8 * 60 * 60 * 1000);
+    }
     function extractInboxLabel(x) {
       if (!x || typeof x !== "object") return "";
       const candidates = [
@@ -1105,10 +1111,17 @@
         el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
       });
     }
+    function updatePredenunciaCountdowns() {
+      const now = Date.now();
+      document.querySelectorAll("[data-pred-exp]").forEach((el) => {
+        const expMs = Number(el.getAttribute("data-pred-exp") || "0");
+        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
+      });
+    }
 
-    async function purgeOldPredenuncias(days = 7) {
+    async function purgeOldPredenuncias(hours = 8) {
       let totalDeleted = 0;
-      const cutoffMs = Date.now() - (days * 24 * 60 * 60 * 1000);
+      const cutoffMs = Date.now() - (hours * 60 * 60 * 1000);
       const cutoffTs = Timestamp.fromMillis(cutoffMs);
       while (true) {
         const q = query(
@@ -1170,7 +1183,7 @@
       if (lastMs > 0 && (nowMs - lastMs) < DAY_MS) return;
       try {
         const tokensDeleted = await purgeExpiredTokens();
-        const predsDeleted = await purgeOldPredenuncias(7);
+        const predsDeleted = await purgeOldPredenuncias(8);
         const regsDeleted = await purgeOldRegistros(1);
         const inboxDeleted = await purgeOldInbox(8);
         localStorage.setItem(KEY, String(nowMs));
@@ -1499,19 +1512,8 @@
         ttl.className = "mono";
         ttl.style.opacity = ".8";
         ttl.style.marginRight = "8px";
-        let ttlText = "--/--";
-        try {
-          const fin = d.finalizedAt && typeof d.finalizedAt.toDate === "function"
-            ? d.finalizedAt.toDate()
-            : (d.finalizedAt instanceof Date ? d.finalizedAt : null);
-          if (fin) {
-            const exp = new Date(fin.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const dd = String(exp.getDate()).padStart(2, "0");
-            const mm = String(exp.getMonth() + 1).padStart(2, "0");
-            ttlText = `${dd}/${mm}`;
-          }
-        } catch (_) { }
-        ttl.textContent = `⌛️${ttlText}`;
+        ttl.style.flexShrink = "0";
+        ttl.setAttribute("data-pred-exp", String(getPredenunciaExpiryMs(d)));
         el.appendChild(ttl);
 
         const del = document.createElement("button");
@@ -1541,6 +1543,7 @@
         el.addEventListener("click", () => selectDenuncia(d.id));
         box.appendChild(el);
       }
+      updatePredenunciaCountdowns();
     }
     function escapeHtml(s) {
       return String(s || "").replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -2126,12 +2129,14 @@
         await autoPurgeTokensIfDue();
         if (!__regsCountdownTimer) {
           __regsCountdownTimer = setInterval(() => {
+            updatePredenunciaCountdowns();
             updateRegistroCountdowns();
             updateInboxCountdowns();
           }, 1000);
         }
         if (!__housekeepingTimer) {
           __housekeepingTimer = setInterval(async () => {
+            try { await purgeOldPredenuncias(8); } catch (_) { }
             try { await purgeOldRegistros(1); } catch (_) { }
             try { await purgeOldInbox(8); } catch (_) { }
           }, 5 * 60 * 1000);
