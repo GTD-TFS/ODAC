@@ -1049,6 +1049,20 @@
       if (created <= 0) return 0;
       return created + (8 * 60 * 60 * 1000);
     }
+    function extractInboxLabel(x) {
+      if (!x || typeof x !== "object") return "";
+      const candidates = [
+        x.label, x.LABEL, x.Label,
+        x.label_publico, x.labelPublico,
+        x.meta && x.meta.label,
+        x.payload && x.payload.label
+      ];
+      for (const v of candidates) {
+        const s = (v == null) ? "" : String(v).trim();
+        if (s) return s;
+      }
+      return "";
+    }
 
     function buildRegistroPublicLabel(r) {
       const src = String((r && (r.labelPublico || r.filename || r.id)) || "")
@@ -1088,7 +1102,7 @@
       const now = Date.now();
       document.querySelectorAll("[data-inbox-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-inbox-exp") || "0");
-        el.textContent = `⌛ ${fmtCountdownHMS(expMs - now)}`;
+        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
       });
     }
 
@@ -1851,7 +1865,7 @@
             ? `${pad(created.getHours())}:${pad(created.getMinutes())}h`
             : "--:--h";
 
-          const labelRaw = (x.label || x.label_publico || "").toString().trim();
+          const labelRaw = extractInboxLabel(x);
           const title = labelRaw
             ? `📥 ${labelRaw}`
             : `📥 Comparecencia · ${fecha} · ${hora}`;
@@ -1914,6 +1928,7 @@
         cd.className = "mono";
         cd.style.opacity = ".85";
         cd.style.marginRight = "8px";
+        cd.style.flexShrink = "0";
         cd.setAttribute("data-inbox-exp", String(getInboxExpiryMs(r)));
         el.appendChild(cd);
 
