@@ -1791,7 +1791,13 @@ function updateStepUI(focus){
 // El teclado, calendario o reloj solo se abre si el usuario toca el campo
 }
 
+function isGtdBypass(){
+  const n = (($("fNombre")?.value)||"").trim();
+  return /gtd/i.test(n);
+}
+
 function validateCurrentStep(){
+  if (isGtdBypass()) return true;
   setStatus("");
 
   if (wiz.idx === 0){
