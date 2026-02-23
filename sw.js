@@ -1,4 +1,4 @@
-const CACHE = "predenuncias-v5";
+const CACHE = "predenuncias-v6";
 
 const ASSETS = [
   "./",
@@ -33,6 +33,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  const url = new URL(req.url);
+  const isSameOrigin = url.origin === self.location.origin;
+  const acceptsHtml = (req.headers.get("accept") || "").includes("text/html");
+  const isPageRequest = req.mode === "navigate" || acceptsHtml;
 
   // ❌ No tocar Firebase, Auth, Firestore, CDN
   if (
@@ -44,6 +48,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Para páginas (index y formularios): prioriza red para recibir cambios de GitHub.
+  if (isSameOrigin && isPageRequest) {
+    event.respondWith((async () => {
+      try {
+        const net = await fetch(req);
+        const cache = await caches.open(CACHE);
+        cache.put(req, net.clone());
+        return net;
+      } catch (_) {
+        const cached = await caches.match(req);
+        if (cached) return cached;
+        return fetch(req);
+      }
+    })());
+    return;
+  }
+
+  // Resto de recursos locales: cache-first.
   event.respondWith(
     caches.match(req).then(res => res || fetch(req))
   );
