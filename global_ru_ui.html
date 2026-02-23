@@ -431,7 +431,7 @@
   <label>Гражданство</label>
   <div class="picker">
     <div class="pickerTop">
-      <input id="fNac" placeholder="United Kingdom, Italy, Germany..." />
+      <input id="fNac" placeholder="Россия, Франция, Германия..." />
     </div>
     <div class="pillList" id="nacPills"></div>
   </div>
@@ -563,7 +563,7 @@
 <div class="modalBack" id="authorsBack" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modalHead">
-      <div class="modalTitle">Authors</div>
+      <div class="modalTitle">Описание нарушителя</div>
       <button class="btn small secondary" id="btnЗакрытьAuthors" type="button">Закрыть</button>
     </div>
     <div id="authorsList" style="margin-top:10px;display:flex;flex-direction:column;gap:10px"></div>
@@ -1743,7 +1743,7 @@ function updateProgress(){
     }
   }
   const p = $("wizProgress");
-  if (p) p.textContent = `Step ${pos} of ${total}`;
+  if (p) p.textContent = `Шаг  из `;
 }
 
 function updateStepUI(focus){
@@ -2060,9 +2060,9 @@ function authorCard(author, idx){
     return w;
   };
   row1.appendChild(mkSel("Пол", AUTOR_SEXO_OPTIONS, "sexo"));
-  row1.appendChild(mkSel("Age range", AUTOR_EDAD_OPTIONS, "edad_rango"));
-  row1.appendChild(mkSel("Build", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
-  row1.appendChild(mkSel("Height range", AUTOR_ALTURA_OPTIONS, "altura_rango"));
+  row1.appendChild(mkSel("Возрастной диапазон", AUTOR_EDAD_OPTIONS, "edad_rango"));
+  row1.appendChild(mkSel("Телосложение", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
+  row1.appendChild(mkSel("Диапазон роста", AUTOR_ALTURA_OPTIONS, "altura_rango"));
   wrap.appendChild(row1);
 
   const row2 = document.createElement("div");
@@ -2080,10 +2080,10 @@ function authorCard(author, idx){
     w.appendChild(l); w.appendChild(i);
     return w;
   };
-  row2.appendChild(mkText("Upper clothing", "vestimenta_superior"));
-  row2.appendChild(mkText("Lower clothing", "vestimenta_inferior"));
-  row2.appendChild(mkText("Language/accent", "idioma_acento"));
-  row2.appendChild(mkText("Distinctive feature", "rasgo_distintivo"));
+  row2.appendChild(mkText("Верхняя одежда", "vestimenta_superior"));
+  row2.appendChild(mkText("Нижняя одежда", "vestimenta_inferior"));
+  row2.appendChild(mkText("Язык/акцент", "idioma_acento"));
+  row2.appendChild(mkText("Особая примета", "rasgo_distintivo"));
   wrap.appendChild(row2);
 
   const row3 = document.createElement("div");

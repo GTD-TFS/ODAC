@@ -1737,7 +1737,7 @@ function updateProgress(){
     }
   }
   const p = $("wizProgress");
-  if (p) p.textContent = `Step ${pos} of ${total}`;
+  if (p) p.textContent = `Étape  sur `;
 }
 
 function updateStepUI(focus){
@@ -1752,7 +1752,7 @@ function updateStepUI(focus){
   const pt = document.getElementById("pageTitle");
   if (pt){
     if (wiz.idx === 0){
-      pt.textContent = "IDENTIFICATION DETAILS";
+      pt.textContent = "Données d'identification";
     } else {
       const s = wiz.steps[wiz.idx-1];
       pt.textContent = (s && s.q && s.q.title) ? trUI(String(s.q.title)) : "";
@@ -2053,10 +2053,10 @@ function authorCard(author, idx){
     w.appendChild(l); w.appendChild(s);
     return w;
   };
-  row1.appendChild(mkSel("Sex", AUTOR_SEXO_OPTIONS, "sexo"));
-  row1.appendChild(mkSel("Age range", AUTOR_EDAD_OPTIONS, "edad_rango"));
-  row1.appendChild(mkSel("Build", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
-  row1.appendChild(mkSel("Height range", AUTOR_ALTURA_OPTIONS, "altura_rango"));
+  row1.appendChild(mkSel("Sexe", AUTOR_SEXO_OPTIONS, "sexo"));
+  row1.appendChild(mkSel("Tranche d'âge", AUTOR_EDAD_OPTIONS, "edad_rango"));
+  row1.appendChild(mkSel("Constitution", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
+  row1.appendChild(mkSel("Tranche de taille", AUTOR_ALTURA_OPTIONS, "altura_rango"));
   wrap.appendChild(row1);
 
   const row2 = document.createElement("div");
@@ -2074,10 +2074,10 @@ function authorCard(author, idx){
     w.appendChild(l); w.appendChild(i);
     return w;
   };
-  row2.appendChild(mkText("Upper clothing", "vestimenta_superior"));
-  row2.appendChild(mkText("Lower clothing", "vestimenta_inferior"));
-  row2.appendChild(mkText("Language/accent", "idioma_acento"));
-  row2.appendChild(mkText("Distinctive feature", "rasgo_distintivo"));
+  row2.appendChild(mkText("Vêtements haut", "vestimenta_superior"));
+  row2.appendChild(mkText("Vêtements bas", "vestimenta_inferior"));
+  row2.appendChild(mkText("Langue/accent", "idioma_acento"));
+  row2.appendChild(mkText("Signe distinctif", "rasgo_distintivo"));
   wrap.appendChild(row2);
 
   const row3 = document.createElement("div");
