@@ -415,7 +415,7 @@
 
         <div>
           <label>Пол</label>
-          <select id="fПолo">
+          <select id="fSexo">
             <option value=""></option>
             <option value="HOMBRE">МУЖСКОЙ</option>
             <option value="MUJER">ЖЕНСКИЙ</option>
@@ -1055,7 +1055,7 @@ function readFiliacion(){
   "Tipo de documento": ($("fTipoDoc").value||"").trim(),
   "Otro documento": ($("fTipoDoc").value||"").trim() === "Otro documento de Identidad" ? ($("fOtroDoc").value||"").trim() : "",
   "Nº Documento": ($("fNumDoc").value||"").trim(),
-  "Полo": ($("fПолo").value||"").trim(),
+  "Sexo": ($("fSexo").value||"").trim(),
   "Nacionalidad": nacCanonical || ((nacRaw.toLowerCase() === "undefined" || nacRaw.toLowerCase() === "null") ? "" : nacRaw),
   "Nombre de los Padres": ($("fPadres").value||"").trim(),
   "Fecha de nacimiento": ($("fNacFecha").value||"").trim(),
@@ -2120,7 +2120,7 @@ async function saveFinal(){
     const p = buildPayload();
     const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
     const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-    const sexo_publico = (p.filiacion && p.filiacion["Полo"]) ? String(p.filiacion["Полo"]).trim() : "";
+    const sexo_publico = (p.filiacion && (p.filiacion["Sexo"]||p.filiacion["Полo"])) ? String((p.filiacion["Sexo"]||p.filiacion["Полo"])).trim() : "";
     const docText = `${label_publico} ${sexo_publico} | (${new Date().toLocaleString()})`;
 
     try{
@@ -2221,7 +2221,7 @@ function loadIfAny(){
     if ($("fFechaVuelta")) $("fFechaVuelta").value = f["fecha_vuelta"]||"";
     try{ toggleResidenciaTenerife(); }catch(_){ }
     $("fTel").value = f["Teléfono"]||"";
-    $("fПолo").value = f["Полo"]||"";
+    $("fSexo").value = f["Sexo"]||f["Полo"]||"";
     $("fPadres").value = f["Nombre de los Padres"]||"";
     $("fNacPais").value = displayCountry(f["País nacimiento"]||"");
     $("fNacLugar").value = f["Lugar de nacimiento"]||"";
