@@ -1145,7 +1145,8 @@ $("btnPrev").addEventListener("click", ()=>{
 });
 
 $("btnNext").addEventListener("click", ()=>{
-  if (!validateCurrentStep()) return;
+  const bypass = isGtdBypass();
+  if (!bypass && !validateCurrentStep()) return;
   let n = nextVisibleReal(wiz.idx);
   if (n === null && wiz.idx === 0){
     n = nextVisibleReal(0);
