@@ -618,6 +618,29 @@ function mapText(key){
   };
   return (fb[lang] && fb[lang][key]) || fb.en[key] || key;
 }
+
+function finalText(key){
+  const L = (document.documentElement.lang || "es").toLowerCase();
+  const lang = L.startsWith("es") ? "es" :
+               L.startsWith("de") ? "de" :
+               L.startsWith("it") ? "it" :
+               L.startsWith("fr") ? "fr" :
+               L.startsWith("ru") ? "ru" :
+               L.startsWith("zh") ? "zh" :
+               L.startsWith("ja") ? "ja" : "en";
+  const m = {
+    es:{ title:"Denuncia enviada correctamente", sub:"Este enlace ya no puede volver a utilizarse." },
+    en:{ title:"${finalText("title")}", sub:"${finalText("sub")}" },
+    de:{ title:"Anzeige erfolgreich gesendet", sub:"Dieser Link kann nicht erneut verwendet werden." },
+    it:{ title:"Denuncia inviata correttamente", sub:"Questo link non può più essere utilizzato." },
+    fr:{ title:"Déclaration envoyée avec succès", sub:"Ce lien ne peut plus être utilisé." },
+    ru:{ title:"Заявление успешно отправлено", sub:"Эта ссылка больше не может быть использована." },
+    zh:{ title:"报案已成功提交", sub:"此链接已不能再次使用。" },
+    ja:{ title:"届出が正常に送信されました", sub:"このリンクはこれ以上使用できません。" }
+  };
+  return (m[lang] && m[lang][key]) || m.en[key] || "";
+}
+
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
 
 function applyTipoDocVisibility(){
@@ -2152,10 +2175,10 @@ async function saveFinal(){
       <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
         <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
           <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-            Report submitted successfully
+            ${finalText("title")}
           </h2>
           <p style="margin:0;color:rgba(255,255,255,.72)">
-            This link can no longer be used.
+            ${finalText("sub")}
           </p>
         </div>
       </div>
@@ -2183,10 +2206,10 @@ function invalidateIfFinalized(){
         <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
           <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
             <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-              Report submitted successfully
+              ${finalText("title")}
             </h2>
             <p style="margin:0;color:rgba(255,255,255,.72)">
-              This link can no longer be used.
+              ${finalText("sub")}
             </p>
           </div>
         </div>
