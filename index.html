@@ -1095,21 +1095,21 @@
       const now = Date.now();
       document.querySelectorAll("[data-reg-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-reg-exp") || "0");
-        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
+        el.textContent = `⌛ ${fmtCountdownHMS(expMs - now)}`;
       });
     }
     function updateInboxCountdowns() {
       const now = Date.now();
       document.querySelectorAll("[data-inbox-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-inbox-exp") || "0");
-        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
+        el.textContent = `⌛ ${fmtCountdownHMS(expMs - now)}`;
       });
     }
     function updatePredenunciaCountdowns() {
       const now = Date.now();
       document.querySelectorAll("[data-pred-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-pred-exp") || "0");
-        el.textContent = `⌛ caduca en ${fmtCountdownHMS(expMs - now)}`;
+        el.textContent = `⌛ ${fmtCountdownHMS(expMs - now)}`;
       });
     }
 
