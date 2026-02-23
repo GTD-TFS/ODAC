@@ -601,13 +601,25 @@ const __MAP_LANG = (document.documentElement.lang || "es").toLowerCase();
 function mapText(key){
   const mp = window.DenupolMapPicker;
   if (mp && typeof mp.t === "function") return mp.t(__MAP_LANG, key);
+  const L = (__MAP_LANG||"en").toLowerCase();
+  const lang = L.startsWith("es") ? "es" :
+               L.startsWith("de") ? "de" :
+               L.startsWith("it") ? "it" :
+               L.startsWith("fr") ? "fr" :
+               L.startsWith("ru") ? "ru" :
+               L.startsWith("zh") ? "zh" :
+               L.startsWith("ja") ? "ja" : "en";
   const fb = {
-    pick_on_map:"Seleccionar en mapa",
-    selected_none:"Sin coordenadas seleccionadas",
-    selected_prefix:"Coordenadas",
-    map_legend:"Si no conoce el nombre de la calle, utilice el mapa."
+    es:{ pick_on_map:"Seleccionar en mapa", selected_none:"Sin coordenadas seleccionadas", selected_prefix:"Coordenadas", map_legend:"Si no conoce el nombre de la calle, utilice el mapa." },
+    en:{ pick_on_map:"Pick on map", selected_none:"No coordinates selected", selected_prefix:"Coordinates", map_legend:"If you do not know the street name, use the map." },
+    de:{ pick_on_map:"Auf Karte wählen", selected_none:"Keine Koordinaten ausgewählt", selected_prefix:"Koordinaten", map_legend:"Wenn Sie den Straßennamen nicht kennen, nutzen Sie die Karte." },
+    it:{ pick_on_map:"Seleziona sulla mappa", selected_none:"Nessuna coordinata selezionata", selected_prefix:"Coordinate", map_legend:"Se non conosce il nome della via, usi la mappa." },
+    fr:{ pick_on_map:"Sélectionner sur la carte", selected_none:"Aucune coordonnée sélectionnée", selected_prefix:"Coordonnées", map_legend:"Si vous ne connaissez pas le nom de la rue, utilisez la carte." },
+    ru:{ pick_on_map:"Выбрать на карте", selected_none:"Координаты не выбраны", selected_prefix:"Координаты", map_legend:"Если вы не знаете название улицы, используйте карту." },
+    zh:{ pick_on_map:"在地图上选择", selected_none:"未选择坐标", selected_prefix:"坐标", map_legend:"如果不知道街道名称，请使用地图。" },
+    ja:{ pick_on_map:"地図で選択", selected_none:"座標が未選択です", selected_prefix:"座標", map_legend:"通り名が分からない場合は地図を使用してください。" }
   };
-  return fb[key] || key;
+  return (fb[lang] && fb[lang][key]) || fb.en[key] || key;
 }
 
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
@@ -1113,6 +1125,13 @@ function buildHechosAskedOnly(){
 
   // En LESIONES y AGRESIÓN (familiar/afectivo) no se pregunta "conocimiento_hecho".
   // Si viene arrastrado por carga previa, NO lo exportes.
+if ($("fResideTfeNo")?.checked){
+  const est = ($("fEstanciaEventual")?.value||"").trim();
+  const fv = ($("fFechaVuelta")?.value||"").trim();
+  if (est) out.estancia_eventual = est;
+  if (fv) out.fecha_vuelta = fv;
+}
+
   try{
     const tipoFinal = currentTipoFinal();
     if (tipoFinal === "LESIONES" || tipoFinal === "AGRESION_FAMILIAR_AFECTIVO"){
