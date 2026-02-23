@@ -1119,9 +1119,9 @@
       });
     }
 
-    async function purgeOldPredenuncias(days = 7) {
+    async function purgeOldPredenuncias(hours = 8) {
       let totalDeleted = 0;
-      const cutoffMs = Date.now() - (days * 24 * 60 * 60 * 1000);
+      const cutoffMs = Date.now() - (hours * 60 * 60 * 1000);
       const cutoffTs = Timestamp.fromMillis(cutoffMs);
       while (true) {
         const q = query(
@@ -1183,7 +1183,7 @@
       if (lastMs > 0 && (nowMs - lastMs) < DAY_MS) return;
       try {
         const tokensDeleted = await purgeExpiredTokens();
-        const predsDeleted = await purgeOldPredenuncias(7);
+        const predsDeleted = await purgeOldPredenuncias(8);
         const regsDeleted = await purgeOldRegistros(1);
         const inboxDeleted = await purgeOldInbox(8);
         localStorage.setItem(KEY, String(nowMs));
