@@ -1041,6 +1041,14 @@
     function getRegistroExpiryMs(r) {
       return tsToMs(r && r.createdAt) + (60 * 60 * 1000);
     }
+    function getInboxExpiryMs(r) {
+      const payload = (r && r.payload) || {};
+      const explicitExp = tsToMs(payload.expiresAt || r.expiresAt || null);
+      if (explicitExp > 0) return explicitExp;
+      const created = tsToMs(r && r.createdAt);
+      if (created <= 0) return 0;
+      return created + (8 * 60 * 60 * 1000);
+    }
 
     function buildRegistroPublicLabel(r) {
       const src = String((r && (r.labelPublico || r.filename || r.id)) || "")
@@ -1061,12 +1069,26 @@
       const ss = String(s % 60).padStart(2, "0");
       return `${m}:${ss}`;
     }
+    function fmtCountdownHMS(remMs) {
+      const s = Math.max(0, Math.floor(remMs / 1000));
+      const h = String(Math.floor(s / 3600)).padStart(2, "0");
+      const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${h}:${m}:${ss}`;
+    }
 
     function updateRegistroCountdowns() {
       const now = Date.now();
       document.querySelectorAll("[data-reg-exp]").forEach((el) => {
         const expMs = Number(el.getAttribute("data-reg-exp") || "0");
         el.textContent = `caducidad ${fmtCountdown(expMs - now)}`;
+      });
+    }
+    function updateInboxCountdowns() {
+      const now = Date.now();
+      document.querySelectorAll("[data-inbox-exp]").forEach((el) => {
+        const expMs = Number(el.getAttribute("data-inbox-exp") || "0");
+        el.textContent = `⌛ ${fmtCountdownHMS(expMs - now)}`;
       });
     }
 
@@ -1107,6 +1129,24 @@
       }
       return totalDeleted;
     }
+    async function purgeOldInbox(hours = 8) {
+      let totalDeleted = 0;
+      const cutoffMs = Date.now() - (hours * 60 * 60 * 1000);
+      const cutoffTs = Timestamp.fromMillis(cutoffMs);
+      while (true) {
+        const q = query(
+          collection(db, "denupolInbox"),
+          where("createdAt", "<", cutoffTs),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        totalDeleted += snap.size;
+        if (snap.size < 200) break;
+      }
+      return totalDeleted;
+    }
 
     async function autoPurgeTokensIfDue() {
       const KEY = "odac_last_auto_purge_ms";
@@ -1118,9 +1158,10 @@
         const tokensDeleted = await purgeExpiredTokens();
         const predsDeleted = await purgeOldPredenuncias(7);
         const regsDeleted = await purgeOldRegistros(1);
+        const inboxDeleted = await purgeOldInbox(8);
         localStorage.setItem(KEY, String(nowMs));
         const status = $("workStatus");
-        if (status) status.textContent = `Limpieza automática: tokens ${tokensDeleted}, predenuncias ${predsDeleted}, registros ${regsDeleted}`;
+        if (status) status.textContent = `Limpieza automática: tokens ${tokensDeleted}, predenuncias ${predsDeleted}, registros ${regsDeleted}, comparecencias ${inboxDeleted}`;
       } catch (_) {
         // Silencioso: no bloquea login ni uso del panel
       }
@@ -1256,6 +1297,8 @@
 
       return onSnapshot(q, (snap) => {
         const out = [];
+        const nowMs = Date.now();
+        const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
           out.push({
@@ -1362,6 +1405,8 @@
 
       return onSnapshot(q, (snap) => {
         const out = [];
+        const nowMs = Date.now();
+        const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
 
@@ -1786,6 +1831,8 @@
 
       return onSnapshot(q, (snap) => {
         const out = [];
+        const nowMs = Date.now();
+        const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
           // Título visual: fecha/hora de creación, sin email ni id
@@ -1804,15 +1851,30 @@
             ? `${pad(created.getHours())}:${pad(created.getMinutes())}h`
             : "--:--h";
 
-          const title = `📥 Comparecencia · ${fecha} · ${hora}`;
+          const labelRaw = (x.label || x.label_publico || "").toString().trim();
+          const title = labelRaw
+            ? `📥 ${labelRaw}`
+            : `📥 Comparecencia · ${fecha} · ${hora}`;
+
+          const expMs = getInboxExpiryMs({ createdAt: x.createdAt || null, expiresAt: x.expiresAt || null, payload: x });
+          if (expMs > 0 && nowMs >= expMs) {
+            toDelete.push(d.id);
+            return;
+          }
 
           out.push({
             id: d.id,
             title,
             payload: x,
-            createdAt: x.createdAt || null
+            createdAt: x.createdAt || null,
+            expiresAt: x.expiresAt || null
           });
         });
+
+        if (toDelete.length) {
+          Promise.all(toDelete.map((id) => deleteDoc(doc(db, "denupolInbox", id)).catch(() => { })))
+            .catch(() => { });
+        }
 
         state.inbox = out;
         if (state.mode === "inbox") renderInbox();
@@ -1848,6 +1910,13 @@
         left.innerHTML = `<div class="t">${escapeHtml(r.title)}</div>`;
         el.appendChild(left);
 
+        const cd = document.createElement("span");
+        cd.className = "mono";
+        cd.style.opacity = ".85";
+        cd.style.marginRight = "8px";
+        cd.setAttribute("data-inbox-exp", String(getInboxExpiryMs(r)));
+        el.appendChild(cd);
+
         const del = document.createElement("button");
         del.type = "button";
         del.className = "iconBtn";
@@ -1874,6 +1943,7 @@
         el.addEventListener("click", () => selectInbox(r.id));
         box.appendChild(el);
       }
+      updateInboxCountdowns();
     }
 
     function selectInbox(id) {
@@ -2039,10 +2109,16 @@
         if (!__unsubRegs && state.userUid) __unsubRegs = startRegistrosListener(state.userUid);
         if (!__unsubInbox && state.userUid) __unsubInbox = startInboxListener(state.userUid);
         await autoPurgeTokensIfDue();
-        if (!__regsCountdownTimer) __regsCountdownTimer = setInterval(updateRegistroCountdowns, 1000);
+        if (!__regsCountdownTimer) {
+          __regsCountdownTimer = setInterval(() => {
+            updateRegistroCountdowns();
+            updateInboxCountdowns();
+          }, 1000);
+        }
         if (!__housekeepingTimer) {
           __housekeepingTimer = setInterval(async () => {
             try { await purgeOldRegistros(1); } catch (_) { }
+            try { await purgeOldInbox(8); } catch (_) { }
           }, 5 * 60 * 1000);
         }
       } else {

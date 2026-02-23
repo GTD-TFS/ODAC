@@ -36,6 +36,16 @@ function isValidFinalPredUpdate(id){
     && request.resource.data.hechos is map
     && !("docText" in request.resource.data);
 }
+
+function isValidInboxCreate(){
+  return request.resource.data.keys().hasAll(["createdAt","expiresAt"])
+    && request.resource.data.createdAt is timestamp
+    && request.resource.data.expiresAt is timestamp
+    && request.resource.data.createdAt >= request.time - duration.value(1, "m")
+    && request.resource.data.createdAt <= request.time + duration.value(1, "m")
+    && request.resource.data.expiresAt > request.resource.data.createdAt
+    && request.resource.data.expiresAt <= request.resource.data.createdAt + duration.value(8, "h");
+}
     
 
     /* =========================
@@ -81,7 +91,8 @@ function isValidFinalPredUpdate(id){
     match /denupolInbox/{id} {
 
       // LABEJAR autenticado → SOLO CREATE
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        && isValidInboxCreate();
 
       // DENUPOL / policía → lectura total
       allow read, update, delete: if isPolice();
