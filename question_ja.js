@@ -1306,4 +1306,14 @@ const QUESTION_SETS = {
 
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
+Object.assign(UI_JA, {
+  "Completa los campos obligatorios para continuar.": "続行するには必須項目を入力してください。",
+  "Indica cuál es el otro documento de identidad.": "その他の身分証明書の種類を入力してください。",
+  "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "身分証番号は必須です（身分証なしを選択した場合を除く）。",
+  "Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.": "番号が文字で始まる場合はNIEです。書類種別でNIEを選択してください。",
+  "Selecciona un país de DOMICILIO válido (usa las píldoras).": "有効な居住国を選択してください（候補ボタンを使用）。",
+  "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "居住国がスペインの場合は県と市区町村を選択してください。",
+  "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "テネリフェ居住でない場合は一時滞在先住所と帰着予定日を入力してください。",
+});
+
 window.QUESTION_JA = { UI_EN: UI_JA, UI_JA, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

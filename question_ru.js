@@ -1559,4 +1559,14 @@ Object.assign(UI_RU, {
 
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
+Object.assign(UI_RU, {
+  "Completa los campos obligatorios para continuar.": "Заполните обязательные поля, чтобы продолжить.",
+  "Indica cuál es el otro documento de identidad.": "Укажите, какой именно другой документ удостоверения личности.",
+  "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "Номер документа обязателен, если не выбрано Без документов.",
+  "Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.": "Если номер начинается с буквы, это NIE. Выберите NIE как тип документа.",
+  "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Выберите корректную страну проживания (используйте варианты).",
+  "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "Если место проживания в Испании, выберите провинцию и муниципалитет.",
+  "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "Если вы не проживаете на Тенерифе, укажите временный адрес и дату возвращения.",
+});
+
 window.QUESTION_RU = { UI_EN: UI_RU, UI_RU, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

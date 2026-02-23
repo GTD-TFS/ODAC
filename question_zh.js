@@ -1309,4 +1309,14 @@ const QUESTION_SETS = {
 
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
+Object.assign(UI_ZH, {
+  "Completa los campos obligatorios para continuar.": "请填写必填字段后继续。",
+  "Indica cuál es el otro documento de identidad.": "请说明其他身份证件的类型。",
+  "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "证件号码为必填，除非选择无证件。",
+  "Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.": "若号码以字母开头，则属于NIE。请将证件类型改为NIE。",
+  "Selecciona un país de DOMICILIO válido (usa las píldoras).": "请选择有效的居住国家（使用下方选项）。",
+  "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "若居住地在西班牙，请选择省和市镇。",
+  "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "若不居住在特内里费，请填写临时住址和预计返程日期。",
+});
+
 window.QUESTION_ZH = { UI_EN: UI_ZH, UI_ZH, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

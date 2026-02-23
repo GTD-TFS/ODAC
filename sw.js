@@ -1,4 +1,4 @@
-const CACHE = "predenuncias-v4";
+const CACHE = "predenuncias-v5";
 
 const ASSETS = [
   "./",
@@ -7,7 +7,9 @@ const ASSETS = [
   "./denunciante_patrimonio.html",   // tu “otro html” (o el que sea)
   "./firebase.js",
   "./manifest.webmanifest",
+  "./icon-192.ico",
   "./icon-192.png",
+  "./apple-touch-icon.png",
   "./icon-512.png"
 ];
 

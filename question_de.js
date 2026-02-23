@@ -1568,4 +1568,14 @@ Object.assign(UI_DE, {
 
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
+Object.assign(UI_DE, {
+  "Completa los campos obligatorios para continuar.": "Füllen Sie die Pflichtfelder aus, um fortzufahren.",
+  "Indica cuál es el otro documento de identidad.": "Geben Sie an, welches andere Ausweisdokument es ist.",
+  "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "Die Dokumentnummer ist Pflicht, außer Sie wählen Ohne Dokumente.",
+  "Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.": "Wenn die Nummer mit einem Buchstaben beginnt, ist es ein NIE. Wählen Sie NIE als Dokumenttyp.",
+  "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Wählen Sie ein gültiges Wohnsitzland (über die Chips).",
+  "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "Wenn der Wohnsitz in Spanien ist, wählen Sie Provinz und Gemeinde.",
+  "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "Wenn Sie nicht auf Teneriffa wohnen, geben Sie vorübergehende Adresse und Rückreisedatum an.",
+});
+
 window.QUESTION_DE = { UI_EN: UI_DE, UI_DE, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

@@ -3,9 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="manifest" href="./manifest.webmanifest">
 
 <meta name="theme-color" content="#081423">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.ico" type="image/x-icon">
+<link rel="icon" sizes="192x192" href="./icon-192.png" type="image/png">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <!-- Diccionarios (misma carpeta) -->
 <script src="./paises.js"></script>
 <script src="./countries.js"></script>
@@ -357,6 +360,12 @@
 .pillList{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
 .subGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:720px){.subGrid{grid-template-columns:1fr}}
+.resideChoices{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:6px}
+.resideChoice{margin:0;display:inline-flex;align-items:center;justify-content:flex-start;gap:4px;color:#fff;font-weight:700;line-height:1.15;white-space:nowrap;font-size:15px}
+.resideChoice input{accent-color:var(--brand);margin:0;transform:scale(1.02)}
+.toastMsg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3000;padding:12px 16px;border-radius:12px;background:rgba(10,18,35,.88);border:1px solid rgba(70,120,255,.45);color:#fff;font-weight:700;box-shadow:0 18px 40px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s ease}
+.toastMsg.show{opacity:1}
+@media(max-width:720px){.resideChoice{font-size:14px;gap:3px}}
 
 </style>
 </head>
@@ -484,6 +493,21 @@
             <div style="margin-top:10px">
               <label>街道地址</label>
               <input id="fDomDir" placeholder="街道、门牌、公寓..." />
+            </div>
+          </div>
+        </div>
+        <div style="grid-column:1/-1">
+          <label>您是否常住特内里费岛？</label>
+          <div class="resideChoices">
+            <label class="resideChoice"><input type="radio" id="fResideTfeSi" name="fResideTfe" checked /> 是</label>
+            <label class="resideChoice"><input type="radio" id="fResideTfeNo" name="fResideTfe" /> 否（度假/工作停留）</label>
+          </div>
+          <div id="noResTfeBox" style="display:none;margin-top:10px">
+            <label>在岛上的临时地址</label>
+            <input id="fEstanciaEventual" placeholder="酒店、房间号、公寓..." />
+            <div style="margin-top:10px">
+              <label>您预计何时返回？</label>
+              <input id="fFechaVuelta" type="date" />
             </div>
           </div>
         </div>
@@ -794,7 +818,23 @@ function renderNacPills(){
     const prov = ($("fDomProv")?.value||"").trim();
     fillMunicipios(prov, "fDomMun");
   });
+  $("fResideTfeSi")?.addEventListener("change", toggleResidenciaTenerife);
+  $("fResideTfeNo")?.addEventListener("change", toggleResidenciaTenerife);
+  $("fFechaVuelta")?.addEventListener("change", ()=>{});
+  toggleResidenciaTenerife();
 }
+
+function toggleResidenciaTenerife(){
+  const box = $("noResTfeBox");
+  if (!box) return;
+  const noRes = !!($("fResideTfeNo")?.checked);
+  box.style.display = noRes ? "block" : "none";
+  if (!noRes){
+    if ($("fEstanciaEventual")) $("fEstanciaEventual").value = "";
+    if ($("fFechaVuelta")) $("fFechaVuelta").value = "";
+  }
+}
+
 function computeDomicilio(){
   const pais = canonicalCountry($("fDomPais")?.value);
   const dir  = ($("fDomDir")?.value||"").trim();
@@ -1090,6 +1130,13 @@ function buildHechosAskedOnly(){
   return out;
 }
 function buildPayload(){
+  const filiacion = readFiliacion();
+  if ($("fResideTfeNo")?.checked){
+    const est = ($("fEstanciaEventual")?.value||"").trim();
+    const fv = ($("fFechaVuelta")?.value||"").trim();
+    if (est) filiacion["estancia_eventual"] = est;
+    if (fv) filiacion["fecha_vuelta"] = fv;
+  }
   const tipoFinal = currentTipoFinal();
   let conocimiento_hecho = (wiz.st.conocimiento_hecho||"").trim();
   // En AGRESIÓN, el conocimiento es siempre TESTIGO DIRECTO (no se pregunta).
@@ -1100,7 +1147,7 @@ function buildPayload(){
   const cam = (wiz.st.camaras||"NO");
   return {
     meta: { tipo_delictivo: currentTipoFinal(), token, version: 2, createdAt: new Date().toISOString() },
-    filiacion: readFiliacion(),
+    filiacion,
     hechos: exportForChatGPT(buildHechosAskedOnly())
   };
 }
@@ -1165,6 +1212,33 @@ function shouldShowQuestion(q){
 function setStatus(t){
   const el = $("wizStatus");
   if (el) el.textContent = t || "";
+}
+
+function showToast(msg){
+  const text = String(msg||"").trim();
+  if (!text) return;
+  let t = document.getElementById("wizToast");
+  if (!t){
+    t = document.createElement("div");
+    t.id = "wizToast";
+    t.className = "toastMsg";
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(showToast._tmr);
+  showToast._tmr = setTimeout(()=> t.classList.remove("show"), 1800);
+}
+
+function msgUI(s){
+  return (typeof trUI === "function") ? trUI(s) : s;
+}
+
+function failValidation(msg){
+  const m = msgUI(msg);
+  setStatus(m);
+  showToast(m);
+  return false;
 }
 
 // =============================
@@ -1678,36 +1752,68 @@ function updateStepUI(focus){
 function validateCurrentStep(){
   setStatus("");
 
- if (wiz.idx === 0){
-  const nat = canonicalCountry($("fNac")?.value);
-  if (!nat || !__PAISES_SET.has(nat)){
-    setStatus(trUI("Selecciona una NACIONALIDAD válida (usa las píldoras)."));
-    return false;
-  }
+  if (wiz.idx === 0){
+    const nombre = ($("fNombre")?.value||"").trim();
+    const apellidos = ($("fApellidos")?.value||"").trim();
+    const tipoDoc = ($("fTipoDoc")?.value||"").trim();
+    const otroDoc = ($("fOtroDoc")?.value||"").trim();
+    const numDoc = ($("fNumDoc")?.value||"").trim();
+    const sexo = ($("fSexo")?.value||"").trim();
+    const fechaNac = ($("fNacFecha")?.value||"").trim();
+    const dir = ($("fDomDir")?.value||"").trim();
 
-  const paisNac = canonicalCountry($("fNacPais")?.value);
-  if (!paisNac || !__PAISES_SET.has(paisNac)){
-    setStatus(trUI("Selecciona un PAÍS de nacimiento válido (usa las píldoras)."));
-    return false;
-  }
+    const isIndoc = /INDOCUMENTAD/.test(normUp(tipoDoc));
 
-  if (paisNac === "ESPAÑA"){
-    const prov = ($("fNacProv")?.value||"").trim();
-    const mun  = ($("fNacMun")?.value||"").trim();
-    if (!prov || !mun){
-      setStatus(trUI("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO."));
-      return false;
+    if (!nombre || !apellidos || !tipoDoc || !sexo || !fechaNac || !dir){
+      return failValidation("Completa los campos obligatorios para continuar.");
     }
-  }
 
-  return true;
-}
+    if (tipoDoc === "Otro documento de Identidad" && !otroDoc){
+      return failValidation("Indica cuál es el otro documento de identidad.");
+    }
+
+    if (!isIndoc && !numDoc){
+      return failValidation("El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.");
+    }
+
+    if (tipoDoc === "DNI" && /^[A-Za-z]/.test(numDoc)){
+      return failValidation("Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.");
+    }
+
+    const canonCountry = (v)=> (typeof canonicalCountry === "function") ? canonicalCountry(v) : normUp(v);
+
+    const nat = canonCountry($("fNac")?.value);
+    if (!nat || !__PAISES_SET.has(nat)) return failValidation("Selecciona una NACIONALIDAD válida (usa las píldoras).");
+
+    const paisNac = canonCountry($("fNacPais")?.value);
+    if (!paisNac || !__PAISES_SET.has(paisNac)) return failValidation("Selecciona un PAÍS de nacimiento válido (usa las píldoras).");
+
+    if (paisNac === "ESPAÑA") {
+      const prov = ($("fNacProv")?.value||"").trim();
+      const mun = ($("fNacMun")?.value||"").trim();
+      if (!prov || !mun) return failValidation("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+    }
+
+    const paisDom = canonCountry($("fDomPais")?.value);
+    if (!paisDom || !__PAISES_SET.has(paisDom)) return failValidation("Selecciona un país de DOMICILIO válido (usa las píldoras).");
+
+    if (paisDom === "ESPAÑA") {
+      const provD = ($("fDomProv")?.value||"").trim();
+      const munD = ($("fDomMun")?.value||"").trim();
+      if (!provD || !munD) return failValidation("Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+    }
+
+    if ($("fResideTfeNo")?.checked){
+      const est = ($("fEstanciaEventual")?.value||"").trim();
+      const fv = ($("fFechaVuelta")?.value||"").trim();
+      if (!est || !fv) return failValidation("Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.");
+    }
+
+    return true;
+  }
 
   const s = wiz.steps[wiz.idx-1];
   if (!s) return true;
-
-  // Para selects/datos básicos: no forzamos salvo campos críticos.
-  // Si quieres hacer obligatorios, aquí es donde se marca.
   return true;
 }
 
@@ -2102,6 +2208,12 @@ function loadIfAny(){
     $("fNacLugar").value = f["Lugar de nacimiento"]||"";
     $("fDomDir").value = f["Domicilio"]||"";
     $("fDomPais").value = "";
+    const __resNo = !!((f["estancia_eventual"]||"").trim() || (f["fecha_vuelta"]||"").trim());
+    if ($("fResideTfeNo")) $("fResideTfeNo").checked = __resNo;
+    if ($("fResideTfeSi")) $("fResideTfeSi").checked = !__resNo;
+    if ($("fEstanciaEventual")) $("fEstanciaEventual").value = f["estancia_eventual"]||"";
+    if ($("fFechaVuelta")) $("fFechaVuelta").value = f["fecha_vuelta"]||"";
+    try{ toggleResidenciaTenerife(); }catch(_){ }
     $("fTel").value = f["Teléfono"]||"";
     $("fSexo").value = f["Sexo"]||"";
     $("fPadres").value = f["Nombre de los Padres"]||"";
