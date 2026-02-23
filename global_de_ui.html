@@ -1884,7 +1884,11 @@ $("btnPrev").addEventListener("click", ()=>{
 
 $("btnNext").addEventListener("click", ()=>{
   if (!validateCurrentStep()) return;
-  const n = nextVisibleReal(wiz.idx);
+  let n = nextVisibleReal(wiz.idx);
+  if (n === null && wiz.idx === 0){
+    n = nextVisibleReal(0);
+    if (n === null && wiz.steps.length) n = 1;
+  }
   if (n !== null) goTo(n);
 });
 
