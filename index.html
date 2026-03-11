@@ -620,25 +620,25 @@
       text-decoration: none
     }
 
-    /* ===== TRIPLE TOGGLE (Predenuncias / Detenidos / Entradas) ===== */
+    /* ===== DOBLE TOGGLE (Predenuncias / Detenidos) ===== */
     .modeToggle {
       display: inline-flex;
       align-items: center;
       padding: 6px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .06);
+      background: rgba(0, 0, 0, .26);
       border: 1px solid rgba(255, 255, 255, .12);
       box-shadow:
         0 14px 36px rgba(0, 0, 0, .45),
-        inset 0 1px 0 rgba(255, 255, 255, .10);
+        inset 0 1px 0 rgba(255, 255, 255, .04);
       backdrop-filter: blur(14px) saturate(130%);
       -webkit-backdrop-filter: blur(14px) saturate(130%);
     }
 
     .modeToggle .seg {
       appearance: none;
-      border: 0;
-      background: transparent;
+      border: 1px solid rgba(255, 255, 255, .06);
+      background: rgba(0, 0, 0, .20);
       color: rgba(255, 255, 255, .92);
       padding: 12px 22px;
       border-radius: 999px;
@@ -655,7 +655,7 @@
     }
 
     .modeToggle .seg:hover {
-      opacity: 1;
+      opacity: .9;
     }
 
     .modeToggle .seg:active {
@@ -665,6 +665,7 @@
     .modeToggle .seg.on {
       opacity: 1;
       background: rgba(255, 255, 255, .10);
+      border-color: rgba(255, 255, 255, .12);
       box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, .10),
         inset 0 10px 22px rgba(0, 0, 0, .18);
@@ -742,7 +743,6 @@
         <div id="modeToggle" class="modeToggle" role="tablist" aria-label="Modo">
           <button class="seg on" id="modePred" type="button" role="tab" aria-selected="true">👨🏼‍💼📋</button>
           <button class="seg" id="modeReg" type="button" role="tab" aria-selected="false">⛓️🦸🏿‍♂️</button>
-          <button class="seg" id="modeInbox" type="button" role="tab" aria-selected="false">👮🏼‍♂️📋</button>
         </div>
 
         <button class="qrBtn" id="btnGenToken" type="button">
@@ -1290,7 +1290,7 @@
       const p = $("modePred");
       const r = $("modeReg");
       const i = $("modeInbox");
-      if (!p || !r || !i) return;
+      if (!p || !r) return;
 
       const isP = state.mode === "predenuncias";
       const isR = state.mode === "registros";
@@ -1298,11 +1298,12 @@
 
       p.classList.toggle("on", isP);
       r.classList.toggle("on", isR);
-      i.classList.toggle("on", isI);
-
       p.setAttribute("aria-selected", isP ? "true" : "false");
       r.setAttribute("aria-selected", isR ? "true" : "false");
-      i.setAttribute("aria-selected", isI ? "true" : "false");
+      if (i) {
+        i.classList.toggle("on", isI);
+        i.setAttribute("aria-selected", isI ? "true" : "false");
+      }
 
       const qr = $("btnGenToken");
       if (qr) qr.style.display = isP ? "" : "none";

@@ -2,10 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* =========================
-       FUNCIONES GENERALES
-    ========================== */
-
     function isPolice() {
       return request.auth != null;
     }
@@ -16,87 +12,100 @@ service cloud.firestore {
         && request.time < get(/databases/$(database)/documents/tokenSessions/$(token)).data.expiresAt;
     }
 
-function isValidFinalPredCreate(id){
-  return request.resource.data.keys().hasOnly([
-      "estado","tipo","token","hechos","createdAt","finalizedAt",
-      "doc","crimeType","filiacion_enc","label_publico","sexo_publico"
-    ])
-    && request.resource.data.estado == "FINALIZADA"
-    && request.resource.data.token == id
-    && request.resource.data.tipo is string
-    && request.resource.data.hechos is map
-    && !("docText" in request.resource.data);
-}
+    function predAllowedKeys() {
+      return [
+        "estado",
+        "tipo",
+        "token",
+        "hechos",
+        "createdAt",
+        "startedAt",
+        "lastUpdatedAt",
+        "finalizedAt",
+        "doc",
+        "docText",
+        "crimeType",
+        "filiacion",
+        "filiacion_enc",
+        "label_publico",
+        "sexo_publico",
+        "ai_session_id",
+        "ai_turns",
+        "hechos_ai"
+      ];
+    }
 
-function isValidFinalPredUpdate(id){
-  // En update NO uses hasOnly() porque el doc puede traer campos antiguos
-  return request.resource.data.estado == "FINALIZADA"
-    && request.resource.data.token == id
-    && request.resource.data.tipo is string
-    && request.resource.data.hechos is map
-    && !("docText" in request.resource.data);
-}
+    function hasPredIdentityData() {
+      return (
+        ("filiacion_enc" in request.resource.data && request.resource.data.filiacion_enc is map) ||
+        ("filiacion" in request.resource.data && request.resource.data.filiacion is map)
+      )
+      && ("label_publico" in request.resource.data && request.resource.data.label_publico is string)
+      && ("sexo_publico" in request.resource.data && request.resource.data.sexo_publico is string);
+    }
 
-function isValidInboxCreate(){
-  return request.resource.data.keys().hasAll(["createdAt","expiresAt"])
-    && request.resource.data.createdAt is timestamp
-    && request.resource.data.expiresAt is timestamp
-    && request.resource.data.createdAt >= request.time - duration.value(1, "m")
-    && request.resource.data.createdAt <= request.time + duration.value(1, "m")
-    && request.resource.data.expiresAt > request.resource.data.createdAt
-    && request.resource.data.expiresAt <= request.resource.data.createdAt + duration.value(8, "h");
-}
-    
+    function isValidPredStarted(id) {
+      return request.resource.data.estado == "INICIADA"
+        && request.resource.data.token == id
+        && request.resource.data.tipo is string
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.startedAt is timestamp
+        && request.resource.data.lastUpdatedAt is timestamp
+        && hasPredIdentityData();
+    }
 
-    /* =========================
-       TOKENS
-    ========================== */
+    function isValidPredFinal(id) {
+      return request.resource.data.estado == "FINALIZADA"
+        && request.resource.data.token == id
+        && request.resource.data.tipo is string
+        && request.resource.data.hechos is map
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.finalizedAt is timestamp
+        && hasPredIdentityData();
+    }
 
-  match /tokenSessions/{token} {
-  allow get: if true;      // necesario para tokenOk() sin login
-  allow list: if isPolice();
-  allow create, update, delete: if isPolice();
-}
+    function isValidPredCreate(id) {
+      return request.resource.data.keys().hasOnly(predAllowedKeys())
+        && (
+          isValidPredStarted(id) ||
+          isValidPredFinal(id)
+        );
+    }
 
-    /* =========================
-       PREDENUNCIAS
-    ========================== */
+    function isValidPredUpdate(id) {
+      return request.resource.data.keys().hasOnly(predAllowedKeys())
+        && request.resource.data.token == id
+        && (
+          isValidPredStarted(id) ||
+          isValidPredFinal(id)
+        );
+    }
 
-   match /predenuncias/{id} {
+    match /tokenSessions/{token} {
+      allow get: if true;
+      allow list: if isPolice();
+      allow create, update, delete: if isPolice();
+    }
 
-  allow read, create, update, delete: if isPolice();
+    match /predenuncias/{id} {
+      allow read, delete: if isPolice();
 
-  allow create: if tokenOk(id) && isValidFinalPredCreate(id);
+      allow create: if isPolice() || (tokenOk(id) && isValidPredCreate(id));
 
-  allow update: if tokenOk(id)
-    && isValidFinalPredUpdate(id)
-    && request.resource.data.diff(resource.data).changedKeys().hasOnly([
-      "estado","tipo","token","hechos","createdAt","finalizedAt",
-      "doc","crimeType","filiacion_enc","label_publico","sexo_publico"
-    ]);
-}
-
-    /* =========================
-       REGISTROS CIFRADOS COMPAPOL
-    ========================== */
+      allow update: if isPolice() || (
+        tokenOk(id)
+        && isValidPredUpdate(id)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(predAllowedKeys())
+      );
+    }
 
     match /registros/{id} {
       allow read, create, update, delete: if isPolice();
     }
 
-    /* =========================
-       DENUPOL INBOX (LABEJAR → DENUPOL)
-    ========================== */
-
     match /denupolInbox/{id} {
-
-      // LABEJAR autenticado → SOLO CREATE
-      allow create: if request.auth != null
-        && isValidInboxCreate();
-
-      // DENUPOL / policía → lectura total
+      allow create: if request.auth != null;
       allow read, update, delete: if isPolice();
     }
-
   }
 }
