@@ -646,6 +646,7 @@ function finalText(key){
 
 
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
+
 // === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
 const UI_ES_OVERRIDES = {
   "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO/PÉRDIDA",
@@ -1847,17 +1848,14 @@ $("btnPrev").addEventListener("click", ()=>{
 $("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
-
   let n = nextVisibleReal(wiz.idx);
   if (n === null && wiz.idx === 0){
     n = nextVisibleReal(0);
     if (n === null && wiz.steps.length) n = 1;
   }
-
   if (wiz.idx === 0 && n !== null){
     try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
   }
-
   if (n !== null) goTo(n);
 });
 
@@ -2125,7 +2123,6 @@ async function saveInitialPredenuncia(){
   if (!token) return;
 
   const p = buildPayload();
-
   try{
     const outLocal = { estado:"INICIADA", ...p };
     localStorage.setItem(storageKey(), JSON.stringify(outLocal));
@@ -2167,6 +2164,7 @@ async function saveFinal(){
     const sexo_publico = ((p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]) : "").trim();
     const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
 
+    // "doc" abierto: mínimo viable = resumen (o vacío). Denupol lo editará.
     const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen)) ? String(p.hechos.resumen || p.hechos.Resumen) : "";
 
     await setDoc(ref, {

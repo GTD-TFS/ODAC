@@ -533,7 +533,6 @@
       </div>
 
       <div class="status" id="wizStatus"></div>
-      <div id="aiMount"></div>
     </div>
 
     <div class="row" style="justify-content:flex-end;display:none">
@@ -590,24 +589,10 @@
 <script type="module">
 import { db, serverTimestamp } from "./firebase.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { createAiAssistant } from "./ai_assistant.js";
 const { UI_EN, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP } = window.QUESTION_ZH;
 const $ = (id)=>document.getElementById(id);
 const qs = new URLSearchParams(location.search);
-const token = (()=>{
-  const qTok = (qs.get("token")||"").trim();
-  if (qTok) return qTok;
-  const k = "denupol_local_token";
-  try{
-    const prev = (localStorage.getItem(k)||"").trim();
-    if (prev) return prev;
-    const gen = "LOCAL-" + Date.now().toString(36).toUpperCase();
-    localStorage.setItem(k, gen);
-    return gen;
-  }catch(_){
-    return "LOCAL-" + Date.now().toString(36).toUpperCase();
-  }
-})();
+const token = (qs.get("token")||"").trim();
 const __MAP_LANG = (document.documentElement.lang || "es").toLowerCase();
 function mapText(key){
   const mp = window.DenupolMapPicker;
@@ -656,12 +641,6 @@ function finalText(key){
 }
 
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
-const AI_API_BASE = (qs.get("aiBase") || localStorage.getItem("denupol_ai_base") || "http://127.0.0.1:8787").trim();
-try{ if (AI_API_BASE) localStorage.setItem("denupol_ai_base", AI_API_BASE); }catch(_){ }
-let aiAssistant = null;
-let aiReviewStage = false;
-const DEV_MODE = (qs.get("dev") === "1");
-const RESET_LOCAL = (qs.get("reset") === "1");
 
 function applyTipoDocVisibility(){
   const sel = $("fTipoDoc");
@@ -1095,10 +1074,6 @@ const wiz = {
 };
 
 function storageKey(){ return "pred_GLOBAL_"+token; }
-function clearLocalDraft(){
-  try{ localStorage.removeItem(storageKey()); }catch(_){ }
-  try{ if (RESET_LOCAL) localStorage.removeItem("denupol_local_token"); }catch(_){ }
-}
 
 function readFiliacion(){
   const nacCanonical = canonicalCountry($("fNac").value||"");
@@ -1268,16 +1243,6 @@ function exportForChatGPT(state, map = EXPORT_KEY_MAP){
   }
   return out;
 }
-
-aiAssistant = createAiAssistant({
-  mountEl: $("aiMount"),
-  apiBase: AI_API_BASE,
-  token,
-  getPayload: () => buildPayload(),
-  getCrimeType: () => currentTipoFinal(),
-  setStatus: (m) => setStatus(m),
-  t: (txt) => (typeof trUI === "function") ? trUI(txt) : txt
-});
 
 function shouldShowQuestion(q){
   if (typeof q.when === "function"){
@@ -1811,39 +1776,16 @@ function updateStepUI(focus){
 
   // En la pantalla de filiación (idx 0) SIEMPRE mostramos SIGUIENTE y ocultamos FINALIZAR.
   // Evita que un fallo de cálculo de visibilidad deje al usuario con FINALIZAR desde el inicio.
-  if (!next.dataset.defaultLabel) next.dataset.defaultLabel = (next.textContent || "NEXT");
-
   if (wiz.idx === 0){
-    aiReviewStage = false;
-    next.textContent = next.dataset.defaultLabel;
     next.style.display = "inline-block";
     fin.style.display = "none";
   } else {
     const hasNext = nextVisibleReal(wiz.idx) !== null;
-    if (hasNext){
-      aiReviewStage = false;
-      next.textContent = next.dataset.defaultLabel;
-      next.style.display = "inline-block";
-      fin.style.display = "none";
-    } else {
-      if (!aiReviewStage){
-        next.textContent = (typeof trUI === "function") ? trUI("CONTINUAR CON IA") : "CONTINUAR CON IA";
-        next.style.display = "inline-block";
-        fin.style.display = "none";
-      } else {
-        next.style.display = "none";
-        fin.style.display = "inline-block";
-      }
-    }
+    next.style.display = hasNext ? "inline-block" : "none";
+    fin.style.display = hasNext ? "none" : "inline-block";
   }
 
   updateProgress();
-
-  try{
-    aiAssistant?.updateContext({
-      isFinalStep: (wiz.idx !== 0) && (nextVisibleReal(wiz.idx) === null) && aiReviewStage
-    });
-  }catch(_){ }
 
   // SIN AUTOFOCUS
 // El teclado, calendario o reloj solo se abre si el usuario toca el campo
@@ -1930,11 +1872,6 @@ function goTo(realIdx){
 }
 
 $("btnPrev").addEventListener("click", ()=>{
-  if (aiReviewStage){
-    aiReviewStage = false;
-    updateStepUI(false);
-    return;
-  }
   const p = prevVisibleReal(wiz.idx);
   if (p !== null) goTo(p);
 });
@@ -1942,19 +1879,11 @@ $("btnPrev").addEventListener("click", ()=>{
 $("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
-
   let n = nextVisibleReal(wiz.idx);
   if (n === null && wiz.idx === 0){
     n = nextVisibleReal(0);
     if (n === null && wiz.steps.length) n = 1;
   }
-
-  if (n === null && wiz.idx !== 0 && nextVisibleReal(wiz.idx) === null && !aiReviewStage){
-    aiReviewStage = true;
-    updateStepUI(false);
-    return;
-  }
-
   if (wiz.idx === 0 && n !== null){
     try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
   }
@@ -1962,18 +1891,7 @@ $("btnNext").addEventListener("click", async ()=>{
 });
 
 $("btnFinish").addEventListener("click", async ()=>{
-  const aiData = (aiAssistant && typeof aiAssistant.getSubmissionData === "function")
-    ? aiAssistant.getSubmissionData()
-    : null;
-  const aiDoc = (aiData && aiData.draft) ? String(aiData.draft).trim() : "";
-  if (!aiDoc){
-    const tip = (typeof trUI === "function")
-      ? trUI("Complete primero el bloque de IA y genere la denuncia final antes de enviar.")
-      : "Complete primero el bloque de IA y genere la denuncia final antes de enviar.";
-    alert(tip);
-    return;
-  }
-  await saveFinal(aiDoc);
+  await saveFinal();
 });
 
 // =============================
@@ -2257,8 +2175,8 @@ async function saveInitialPredenuncia(){
 
   const ref = doc(db, "predenuncias", token);
   const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
   const sexo_publico = (p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]).trim() : "";
+  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
 
   await setDoc(ref, {
     estado: "INICIADA",
@@ -2273,7 +2191,7 @@ async function saveInitialPredenuncia(){
   }, { merge: true });
 }
 
-async function saveFinal(forcedDocText = ""){
+async function saveFinal(){
   try{
     if (!token){ alert(trUI("Falta token en la URL.")); return; }
 
@@ -2281,14 +2199,7 @@ async function saveFinal(forcedDocText = ""){
     const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
     const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
     const sexo_publico = (p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]).trim() : "";
-    const aiData = (aiAssistant && typeof aiAssistant.getSubmissionData === "function")
-      ? aiAssistant.getSubmissionData()
-      : null;
-    const aiDoc = (forcedDocText || (aiData && aiData.draft) || "").trim();
-    const fallbackDoc = (p.hechos && (p.hechos.hecho_resumen || p.hechos.resumen || p.hechos.Resumen))
-      ? String(p.hechos.hecho_resumen || p.hechos.resumen || p.hechos.Resumen)
-      : "";
-    const docText = aiDoc || fallbackDoc;
+    const docText = `${label_publico} ${sexo_publico} | (${new Date().toLocaleString()})`;
 
     try{
       const outLocal = { estado:"FINALIZADA", ...p };
@@ -2304,10 +2215,6 @@ async function saveFinal(forcedDocText = ""){
       label_publico,
       sexo_publico,
       doc: docText,
-      docText: docText,
-      ai_session_id: (aiData && aiData.sessionId) ? aiData.sessionId : "",
-      ai_turns: (aiData && Array.isArray(aiData.aiTurns)) ? aiData.aiTurns : [],
-      hechos_ai: (aiData && aiData.hechosAi) ? aiData.hechosAi : null,
       filiacion_enc,
       hechos: p.hechos,
       createdAt: serverTimestamp(),
@@ -2342,7 +2249,6 @@ async function saveFinal(forcedDocText = ""){
 }
 
 function invalidateIfFinalized(){
-  if (DEV_MODE) return;
   const raw = localStorage.getItem(storageKey());
   if (!raw) return;
 
@@ -2437,7 +2343,6 @@ function loadIfAny(){
 }
 
 // INIT
-if (RESET_LOCAL) clearLocalDraft();
 invalidateIfFinalized();
 loadIfAny();
 renderWizard();
