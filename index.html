@@ -1617,7 +1617,7 @@
       if (bp) bp.disabled = false;
       if (bd) {
         bd.disabled = !hasSel || !canDownloadPred;
-        bd.textContent = isStartedPred ? "DESCARGAR FILIACION" : "DESCARGAR";
+        bd.textContent = isStartedPred ? "DESCARGAR BORRADOR" : "DESCARGAR";
       }
 
       const bjson = $("btnCopyFinalJson");
@@ -1837,6 +1837,7 @@
         const finalJson = isStartedPred
           ? {
               estado: "INICIADA",
+              hechos: state.selected.hechosJson || {},
               filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}]
             }
           : {
@@ -1844,7 +1845,7 @@
               filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}]
             };
         const nombreBase = (state.selected.labelPublico || "").toString().trim() || "predenuncia";
-        const nombre = sanitizeFileName(`${nombreBase}${isStartedPred ? "_filiacion" : ""}`) + ".json";
+        const nombre = sanitizeFileName(`${nombreBase}${isStartedPred ? "_borrador" : ""}`) + ".json";
         const jsonText = JSON.stringify(finalJson, null, 2);
         const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
 
