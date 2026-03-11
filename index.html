@@ -1837,7 +1837,7 @@
         const finalJson = isStartedPred
           ? {
               estado: "INICIADA",
-              hechos: state.selected.hechosJson || {},
+              doc: (docText || ""),
               filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}]
             }
           : {
