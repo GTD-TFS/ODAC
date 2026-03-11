@@ -1078,6 +1078,22 @@ const wiz = {
 };
 
 function storageKey(){ return "pred_GLOBAL_"+token; }
+const AUTOSAVE_INTERVAL_MS = 1 * 60 * 1000;
+let draftSyncStarted = false;
+let draftSyncFinalized = false;
+let lastDraftFingerprint = "";
+
+function computeDraftFingerprint(payload){
+  try{
+    return JSON.stringify({
+      tipo: currentTipoFinal(),
+      filiacion: (payload && payload.filiacion) || {},
+      hechos: (payload && payload.hechos) || {}
+    });
+  }catch(_){
+    return "";
+  }
+}
 
 function readFiliacion(){
   const nacCanonical = canonicalCountry($("fNac").value||"");
@@ -2195,6 +2211,36 @@ async function saveInitialPredenuncia(){
     startedAt: serverTimestamp(),
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
+
+  draftSyncStarted = true;
+  draftSyncFinalized = false;
+  lastDraftFingerprint = computeDraftFingerprint(p);
+}
+
+async function syncStartedPredenuncia(force = false){
+  if (!draftSyncStarted || draftSyncFinalized || !token) return;
+
+  const p = buildPayload();
+  const fingerprint = computeDraftFingerprint(p);
+  if (!force && fingerprint && fingerprint === lastDraftFingerprint) return;
+
+  const ref = doc(db, "predenuncias", token);
+  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
+  const sexo_publico = (p.filiacion && (p.filiacion["Sexo"]||p.filiacion["Полo"])) ? String((p.filiacion["Sexo"]||p.filiacion["Полo"])).trim() : "";
+  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
+
+  await setDoc(ref, {
+    estado: "INICIADA",
+    tipo: currentTipoFinal(),
+    token,
+    label_publico,
+    sexo_publico,
+    filiacion_enc,
+    hechos: p.hechos,
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+
+  lastDraftFingerprint = fingerprint;
 }
 
 async function saveFinal(){
@@ -2227,6 +2273,8 @@ async function saveFinal(){
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
+
+    draftSyncFinalized = true;
 
     const msg = $("doneMsg");
     if (msg) msg.style.display = "block";
@@ -2351,6 +2399,15 @@ function loadIfAny(){
 // INIT
 invalidateIfFinalized();
 loadIfAny();
+try{
+  const raw = localStorage.getItem(storageKey());
+  if (raw){
+    const x = JSON.parse(raw);
+    draftSyncStarted = x.estado === "INICIADA";
+    draftSyncFinalized = x.estado === "FINALIZADA";
+    if (draftSyncStarted) lastDraftFingerprint = computeDraftFingerprint(buildPayload());
+  }
+}catch(_){ }
 renderWizard();
 applyTipoDocVisibility();
 updateObjsCount();
@@ -2364,6 +2421,7 @@ try{
 window.addEventListener("resize", ()=>{
   try{ updateStepUI(false); }catch(_){ }
 });
+window.setInterval(()=>{ void syncStartedPredenuncia(false).catch(err => console.warn("autosavePredenuncia", err)); }, AUTOSAVE_INTERVAL_MS);
 // Debug helpers for browser console
 window.dumpPredenunciaPayload = () => buildPayload();
 window.dumpPredenunciaHechos = () => buildPayload().hechos;
