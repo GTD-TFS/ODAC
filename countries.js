@@ -22,6 +22,7 @@ window.COUNTRIES_EN = {
   "BENIN": "Benin",
   "BIELORRUSIA": "Belarus",
   "BOLIVIA": "Bolivia",
+  "BOSNIA HERZEGOVINA": "Bosnia & Herzegovina",
   "BOSNIA Y HERZEGOVINA": "Bosnia & Herzegovina",
   "BOTSUANA": "Botswana",
   "BRASIL": "Brazil",

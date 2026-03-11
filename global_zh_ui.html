@@ -1753,7 +1753,7 @@ function updateProgress(){
     }
   }
   const p = $("wizProgress");
-  if (p) p.textContent = `第步，共步`;
+  if (p) p.textContent = `第${pos}步，共${total}步`;
 }
 
 function updateStepUI(focus){
@@ -1975,7 +1975,7 @@ function renderObjs(){
 
     const valI = document.createElement("input");
     valI.className = "objVal";
-    valI.placeholder = "Value (€)";
+    valI.placeholder = "金额 (€)";
     valI.inputMode = "numeric";
     valI.value = o.valor_total_eur || "";
     valI.addEventListener("input", ()=>{ o.valor_total_eur = valI.value; });

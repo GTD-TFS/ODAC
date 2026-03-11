@@ -807,7 +807,7 @@ const QUESTION_SETS = {
       title: "TIPO DE AMENAZA",
       type: "select",
       options: [
-        "AMENAZA DE MUERTE",
+        "AMENAZA",
         "AMENAZA DE LESIÓN",
         "AMENAZA DE DAÑOS EN BIENES",
         "AMENAZA A MENORES",

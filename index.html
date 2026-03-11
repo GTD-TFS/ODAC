@@ -154,7 +154,7 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M6 6h20v20H6V6zm4 4v12h12V10H10z'/%3E%3Cpath d='M38 6h20v20H38V6zm4 4v12h12V10H42z'/%3E%3Cpath d='M6 38h20v20H6V38zm4 4v12h12V42H10z'/%3E%3Crect x='30' y='28' width='4' height='4'/%3E%3Crect x='34' y='32' width='4' height='4'/%3E%3Crect x='30' y='36' width='4' height='4'/%3E%3Crect x='40' y='28' width='4' height='4'/%3E%3Crect x='46' y='34' width='4' height='4'/%3E%3Crect x='52' y='28' width='4' height='4'/%3E%3Crect x='36' y='42' width='4' height='4'/%3E%3Crect x='42' y='46' width='4' height='4'/%3E%3Crect x='48' y='42' width='4' height='4'/%3E%3Crect x='54' y='48' width='4' height='4'/%3E%3Crect x='34' y='52' width='4' height='4'/%3E%3Crect x='40' y='54' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: center;
-      background-size: 66% 66%;
+      background-size: 58% 58%;
     }
 
     .qrBtn:hover {
@@ -626,21 +626,19 @@
       align-items: center;
       padding: 6px;
       border-radius: 999px;
-      background: rgba(0, 0, 0, .26);
-      border: 1px solid rgba(255, 255, 255, .12);
-      box-shadow:
-        0 14px 36px rgba(0, 0, 0, .45),
-        inset 0 1px 0 rgba(255, 255, 255, .04);
-      backdrop-filter: blur(14px) saturate(130%);
-      -webkit-backdrop-filter: blur(14px) saturate(130%);
+      background: rgba(0, 0, 0, .20);
+      border: 1px solid rgba(255, 255, 255, .06);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
 
     .modeToggle .seg {
       appearance: none;
-      border: 1px solid rgba(255, 255, 255, .06);
-      background: rgba(0, 0, 0, .20);
+      border: 1px solid transparent;
+      background: transparent;
       color: rgba(255, 255, 255, .92);
-      padding: 12px 22px;
+      padding: 10px 16px;
       border-radius: 999px;
       font-weight: 900;
       letter-spacing: .2px;
@@ -651,7 +649,7 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-width: 120px;
+      min-width: 96px;
     }
 
     .modeToggle .seg:hover {
@@ -674,7 +672,7 @@
     @media (max-width: 720px) {
       .modeToggle .seg {
         min-width: 0;
-        padding: 10px 14px;
+        padding: 9px 12px;
       }
     }
 
@@ -900,7 +898,6 @@
 
       <div class="row" style="margin-top:12px">
         <a class="btn pill gray" id="exportLink" href="#" rel="noopener">DESCARGAR JSON</a>
-        <button class="btn pill gray" id="btnCopyExport" type="button">COPIAR JSON</button>
       </div>
 
       <textarea id="exportArea" readonly style="margin-top:10px"></textarea>
@@ -1217,6 +1214,78 @@
       // auth
       userUid: null
     };
+    let __unsubSelectedPred = null;
+
+    function stopSelectedPredListener() {
+      if (!__unsubSelectedPred) return;
+      try { __unsubSelectedPred(); } catch (_) { }
+      __unsubSelectedPred = null;
+    }
+
+    function mapPredenunciaDoc(d) {
+      const x = d.data() || {};
+
+      const fPlain = x.filiacion || {};
+      const filiacionEnc = x.filiacion_enc || x.filiacionEnc || x.filiacionEncrypted || null;
+      const sexoPublico = (x.sexo_publico || x.sexoPublico || fPlain.Sexo || fPlain.SEXO || "").toString().toUpperCase();
+
+      let labelPublico = (x.label_publico || x.labelPublico || "").toString().trim();
+      if (!labelPublico) {
+        const nom = (fPlain["Nombre"] || "").toString().trim();
+        const aps = (fPlain["Apellidos"] || "").toString().trim();
+        const ini = aps ? aps.trim().charAt(0) : "";
+        labelPublico = (nom + (ini ? (" " + ini + ".") : "")).trim();
+      }
+      if (!labelPublico) labelPublico = d.id;
+
+      return {
+        id: d.id,
+        estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
+        tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
+        labelPublico,
+        sexoPublico,
+        filiacionEnc: (filiacionEnc || fPlain),
+        filiacion: fPlain,
+        hechosJson: (x.hechos || {}),
+        docText: (x.docText || x.doc || ""),
+        createdAt: x.createdAt || null,
+        startedAt: x.startedAt || null,
+        lastUpdatedAt: x.lastUpdatedAt || null,
+        finalizedAt: x.finalizedAt || null
+      };
+    }
+
+    function syncSelectedPredIntoState(nextSelected) {
+      if (!nextSelected) return;
+      state.selected = nextSelected;
+      state.denuncias = state.denuncias.map((item) => item.id === nextSelected.id ? nextSelected : item);
+      $("selectedRef").textContent = nextSelected.labelPublico || nextSelected.nombre || nextSelected.id;
+      renderSelectedIntoArea();
+      refreshActions();
+      if (state.mode === "predenuncias") renderDenuncias();
+    }
+
+    function startSelectedPredListener(id) {
+      stopSelectedPredListener();
+      if (!id) return;
+      __unsubSelectedPred = onSnapshot(doc(db, "predenuncias", id), (snap) => {
+        if (!snap.exists()) {
+          if (state.selected && state.selected.id === id) {
+            state.selected = null;
+            $("selectedRef").textContent = "—";
+            $("area").value = "";
+            refreshActions();
+            if (state.mode === "predenuncias") renderDenuncias();
+          }
+          stopSelectedPredListener();
+          return;
+        }
+        syncSelectedPredIntoState(mapPredenunciaDoc(snap));
+      }, (err) => {
+        console.warn("onSnapshot selected predenuncia error", err);
+      });
+    }
+
     function setView(v) {
       state.view = (v === "doc") ? "doc" : "json";
       const bj = $("btnViewJson"), bd = $("btnViewDoc");
@@ -1272,6 +1341,7 @@
       if (state.mode !== "predenuncias") state.selected = null;
       if (state.mode !== "registros") state.selectedReg = null;
       if (state.mode !== "inbox") state.selectedInbox = null;
+      if (state.mode !== "predenuncias") stopSelectedPredListener();
 
       // Clases de modo
       try {
@@ -1453,39 +1523,7 @@
             return;
           }
 
-          // NUEVO: filiación cifrada (Denupol NO descifra). Backward compatible con docs viejos.
-          const fPlain = x.filiacion || {};
-          const filiacionEnc = x.filiacion_enc || x.filiacionEnc || x.filiacionEncrypted || null;
-
-          const sexoPublico = (x.sexo_publico || x.sexoPublico || fPlain.Sexo || fPlain.SEXO || "").toString().toUpperCase();
-
-          // label_publico: Nombre + inicial del 1º apellido (sin exponer apellidos completos)
-          let labelPublico = (x.label_publico || x.labelPublico || "").toString().trim();
-          if (!labelPublico) {
-            const nom = (fPlain["Nombre"] || "").toString().trim();
-            const aps = (fPlain["Apellidos"] || "").toString().trim();
-            const ini = aps ? aps.trim().charAt(0) : "";
-            labelPublico = (nom + (ini ? (" " + ini + ".") : "")).trim();
-          }
-          if (!labelPublico) labelPublico = d.id;
-
-          out.push({
-            id: d.id,
-            estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
-            tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
-            labelPublico,
-            sexoPublico,
-            // si hay cifrada, úsala; si no, conserva la antigua (plain) para no romper flujo legacy
-            filiacionEnc: (filiacionEnc || fPlain),
-            // legacy (no usar para exportar nuevo)
-            filiacion: fPlain,
-            hechosJson: (x.hechos || {}),
-            docText: (x.docText || x.doc || ""),
-            createdAt: x.createdAt || null,
-            startedAt: x.startedAt || null,
-            lastUpdatedAt: x.lastUpdatedAt || null,
-            finalizedAt: x.finalizedAt || null
-          });
+          out.push(mapPredenunciaDoc(d));
         });
 
         if (toDelete.length) {
@@ -1504,7 +1542,7 @@
         $("denStatus").textContent = "";
         if (state.selected) {
           const nx = out.find(z => z.id === state.selected.id);
-          if (nx) { state.selected = nx; renderSelectedIntoArea(); }
+          if (nx) syncSelectedPredIntoState(nx);
         }
       }, (err) => {
         console.warn("onSnapshot predenuncias error", err);
@@ -1586,6 +1624,7 @@
       const d = state.denuncias.find(x => x.id === id);
       if (!d) return;
       state.selected = d;
+      startSelectedPredListener(d.id);
       state.dirtyDoc = false;
 
       $("selectedRef").textContent = d.labelPublico || d.nombre || d.id;
@@ -2049,7 +2088,6 @@
     }
     $("btnCloseExport").addEventListener("click", closeExportModal);
     $("exportBack").addEventListener("click", (e) => { if (e.target === $("exportBack")) closeExportModal(); });
-    $("btnCopyExport").addEventListener("click", async () => { await clipWrite($("exportArea").value || ""); });
 
     function renderQR(text) {
       $("qrBox").innerHTML = "";
@@ -2194,6 +2232,7 @@
         if (__unsubPred) { try { __unsubPred(); } catch (_) { } __unsubPred = null; }
         if (__unsubRegs) { try { __unsubRegs(); } catch (_) { } __unsubRegs = null; }
         if (__unsubInbox) { try { __unsubInbox(); } catch (_) { } __unsubInbox = null; }
+        stopSelectedPredListener();
         if (__regsCountdownTimer) { try { clearInterval(__regsCountdownTimer); } catch (_) { } __regsCountdownTimer = null; }
         if (__housekeepingTimer) { try { clearInterval(__housekeepingTimer); } catch (_) { } __housekeepingTimer = null; }
         state.selected = null;
