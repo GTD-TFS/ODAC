@@ -1612,9 +1612,13 @@
 
       // predenuncias
       const hasSel = !!state.selected;
-      const canDownloadPred = !!(state.selected && state.selected.estado === "FINALIZADA");
+      const isStartedPred = !!(state.selected && state.selected.estado === "INICIADA");
+      const canDownloadPred = !!state.selected;
       if (bp) bp.disabled = false;
-      if (bd) bd.disabled = !hasSel || !canDownloadPred;
+      if (bd) {
+        bd.disabled = !hasSel || !canDownloadPred;
+        bd.textContent = isStartedPred ? "DESCARGAR FILIACION" : "DESCARGAR";
+      }
 
       const bjson = $("btnCopyFinalJson");
       if (bjson) bjson.disabled = true;
@@ -1823,16 +1827,24 @@
           return;
         }
 
-        // PREDENUNCIAS: exporta snapshot {doc,filiaciones}
+        // PREDENUNCIAS: exporta snapshot final o filiacion parcial si esta iniciada
         if (!state.selected) return;
 
         const inArea = ($("area").value || "").trim();
         const persistedDoc = (state.selected && state.selected.docText) ? String(state.selected.docText).trim() : "";
         const docText = (state.view === "doc") ? inArea : persistedDoc;
-
-        const finalJson = { doc: (docText || ""), filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}] };
+        const isStartedPred = state.selected.estado === "INICIADA";
+        const finalJson = isStartedPred
+          ? {
+              estado: "INICIADA",
+              filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}]
+            }
+          : {
+              doc: (docText || ""),
+              filiaciones: [state.selected.filiacionEnc || state.selected.filiacion || {}]
+            };
         const nombreBase = (state.selected.labelPublico || "").toString().trim() || "predenuncia";
-        const nombre = sanitizeFileName(nombreBase) + ".json";
+        const nombre = sanitizeFileName(`${nombreBase}${isStartedPred ? "_filiacion" : ""}`) + ".json";
         const jsonText = JSON.stringify(finalJson, null, 2);
         const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
 
