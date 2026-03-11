@@ -530,11 +530,12 @@
         </div>
         <div class="left">
           <button class="btn pill" id="btnNext" type="button">SIGUIENTE</button>
-          <button class="btn ok pill" id="btnFinish" type="button" style="display:none">FINALIZAR</button>
+          <button class="btn ok pill" id="btnFinish" type="button" style="display:none">FINALIZAR Y ENVIAR</button>
         </div>
       </div>
 
       <div class="status" id="wizStatus"></div>
+      <div id="aiMount"></div>
     </div>
 
     <div class="row" style="justify-content:flex-end;display:none">
@@ -593,10 +594,24 @@
 import { db, serverTimestamp } from "./firebase.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { GLOBAL_ROUTES, QUESTION_SETS } from "./question_es.js";
+import { createAiAssistant } from "./ai_assistant.js";
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 const $ = (id)=>document.getElementById(id);
 const qs = new URLSearchParams(location.search);
-const token = (qs.get("token")||"").trim();
+const token = (()=>{
+  const qTok = (qs.get("token")||"").trim();
+  if (qTok) return qTok;
+  const k = "denupol_local_token";
+  try{
+    const prev = (localStorage.getItem(k)||"").trim();
+    if (prev) return prev;
+    const gen = "LOCAL-" + Date.now().toString(36).toUpperCase();
+    localStorage.setItem(k, gen);
+    return gen;
+  }catch(_){
+    return "LOCAL-" + Date.now().toString(36).toUpperCase();
+  }
+})();
 const __MAP_LANG = (document.documentElement.lang || "es").toLowerCase();
 function mapText(key){
   const mp = window.DenupolMapPicker;
@@ -646,6 +661,12 @@ function finalText(key){
 
 
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
+const AI_API_BASE = (qs.get("aiBase") || localStorage.getItem("denupol_ai_base") || "http://127.0.0.1:8787").trim();
+try{ if (AI_API_BASE) localStorage.setItem("denupol_ai_base", AI_API_BASE); }catch(_){ }
+let aiAssistant = null;
+let aiReviewStage = false;
+const DEV_MODE = (qs.get("dev") === "1");
+const RESET_LOCAL = (qs.get("reset") === "1");
 
 // === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
 const UI_ES_OVERRIDES = {
@@ -1068,6 +1089,10 @@ const wiz = {
 };
 
 function storageKey(){ return "pred_GLOBAL_"+token; }
+function clearLocalDraft(){
+  try{ localStorage.removeItem(storageKey()); }catch(_){ }
+  try{ if (RESET_LOCAL) localStorage.removeItem("denupol_local_token"); }catch(_){ }
+}
 
 function readFiliacion(){
   return {
@@ -1211,6 +1236,16 @@ function exportForChatGPT(state, map = EXPORT_KEY_MAP){
   }
   return out;
 }
+
+aiAssistant = createAiAssistant({
+  mountEl: $("aiMount"),
+  apiBase: AI_API_BASE,
+  token,
+  getPayload: () => buildPayload(),
+  getCrimeType: () => currentTipoFinal(),
+  setStatus: (m) => setStatus(m),
+  t: (txt) => (typeof trUI === "function") ? trUI(txt) : txt
+});
 
 function shouldShowQuestion(q){
   if (typeof q.when === "function"){
@@ -1693,10 +1728,12 @@ function prevVisibleReal(from){
 }
 
 function updateProgress(){
-  const total = totalVisibleSteps();
+  const total = totalVisibleSteps() + 1; // +1 pantalla IA final
   // posición visible actual
   let pos = 1;
-  if (wiz.idx === 0){
+  if (aiReviewStage){
+    pos = total;
+  } else if (wiz.idx === 0){
     pos = 1;
   } else {
     // cuenta visibles hasta wiz.idx
@@ -1720,7 +1757,9 @@ function updateStepUI(focus){
   // Título superior (donde estaba "Predenuncia")
   const pt = document.getElementById("pageTitle");
   if (pt){
-    if (wiz.idx === 0){
+    if (aiReviewStage){
+      pt.textContent = "Asistente IA de completitud";
+    } else if (wiz.idx === 0){
       pt.textContent = "Datos de filiación";
     } else {
       const s = wiz.steps[wiz.idx-1];
@@ -1734,6 +1773,8 @@ function updateStepUI(focus){
     const isActive = (wiz.idx === realIdx);
     wiz.steps[i].el.classList.toggle("isActive", isActive);
   }
+  const dyn = $("dynSteps");
+  if (dyn) dyn.style.display = aiReviewStage ? "none" : "";
 
   // Botones
   const prev = $("btnPrev");
@@ -1745,16 +1786,40 @@ function updateStepUI(focus){
 
   // En la pantalla de filiación (idx 0) SIEMPRE mostramos SIGUIENTE y ocultamos FINALIZAR.
   // Evita que un fallo de cálculo de visibilidad deje al usuario con FINALIZAR desde el inicio.
+  if (!next.dataset.defaultLabel) next.dataset.defaultLabel = (next.textContent || "NEXT");
+
   if (wiz.idx === 0){
+    aiReviewStage = false;
+    next.textContent = next.dataset.defaultLabel;
     next.style.display = "inline-block";
     fin.style.display = "none";
   } else {
     const hasNext = nextVisibleReal(wiz.idx) !== null;
-    next.style.display = hasNext ? "inline-block" : "none";
-    fin.style.display = hasNext ? "none" : "inline-block";
+    if (hasNext){
+      aiReviewStage = false;
+      next.textContent = next.dataset.defaultLabel;
+      next.style.display = "inline-block";
+      fin.style.display = "none";
+    } else {
+      if (!aiReviewStage){
+        next.textContent = next.dataset.defaultLabel;
+        next.style.display = "inline-block";
+        fin.style.display = "none";
+      } else {
+        fin.textContent = (typeof trUI === "function") ? trUI("FINALIZAR Y ENVIAR") : "FINALIZAR Y ENVIAR";
+        next.style.display = "none";
+        fin.style.display = "inline-block";
+      }
+    }
   }
 
   updateProgress();
+
+  try{
+    aiAssistant?.updateContext({
+      isFinalStep: (wiz.idx !== 0) && (nextVisibleReal(wiz.idx) === null) && aiReviewStage
+    });
+  }catch(_){ }
 
   // SIN AUTOFOCUS
 // El teclado, calendario o reloj solo se abre si el usuario toca el campo
@@ -1841,23 +1906,55 @@ function goTo(realIdx){
 }
 
 $("btnPrev").addEventListener("click", ()=>{
+  if (aiReviewStage){
+    aiReviewStage = false;
+    updateStepUI(false);
+    return;
+  }
   const p = prevVisibleReal(wiz.idx);
   if (p !== null) goTo(p);
 });
 
-$("btnNext").addEventListener("click", ()=>{
+$("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
+
   let n = nextVisibleReal(wiz.idx);
   if (n === null && wiz.idx === 0){
     n = nextVisibleReal(0);
     if (n === null && wiz.steps.length) n = 1;
   }
+
+  if (n === null && wiz.idx !== 0 && nextVisibleReal(wiz.idx) === null && !aiReviewStage){
+    aiReviewStage = true;
+    updateStepUI(false);
+    return;
+  }
+
+  if (wiz.idx === 0 && n !== null){
+    try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
+  }
+
   if (n !== null) goTo(n);
 });
 
 $("btnFinish").addEventListener("click", async ()=>{
-  await saveFinal();
+  try{
+    const aiDoc = (aiAssistant && typeof aiAssistant.ensureDraft === "function")
+      ? String(await aiAssistant.ensureDraft() || "").trim()
+      : "";
+    if (!aiDoc){
+      const tip = (typeof trUI === "function")
+        ? trUI("No se pudo generar el relato final. Revise la respuesta IA y vuelva a intentar.")
+        : "No se pudo generar el relato final. Revise la respuesta IA y vuelva a intentar.";
+      alert(tip);
+      return;
+    }
+    await saveFinal(aiDoc);
+  }catch(err){
+    const msg = (err && err.message) ? String(err.message) : String(err || "Error IA");
+    alert(((typeof trUI === "function") ? trUI("Error IA") : "Error IA") + ": " + msg);
+  }
 });
 
 // =============================
@@ -2116,7 +2213,35 @@ $("btnSaveAuthors").addEventListener("click", ()=>{
 // =============================
 // Guardado / carga
 // =============================
-async function saveFinal(){
+async function saveInitialPredenuncia(){
+  if (!token) return;
+
+  const p = buildPayload();
+
+  try{
+    const outLocal = { estado:"INICIADA", ...p };
+    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
+  }catch(_){ }
+
+  const ref = doc(db, "predenuncias", token);
+  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
+  const sexo_publico = ((p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]) : "").trim();
+  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
+
+  await setDoc(ref, {
+    estado: "INICIADA",
+    tipo: currentTipoFinal(),
+    token,
+    filiacion_enc,
+    label_publico,
+    sexo_publico,
+    createdAt: serverTimestamp(),
+    startedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+async function saveFinal(forcedDocText = ""){
   try{
     if (!token){ alert("Falta token en la URL."); return; }
 
@@ -2135,7 +2260,14 @@ async function saveFinal(){
     const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
 
     // "doc" abierto: mínimo viable = resumen (o vacío). Denupol lo editará.
-    const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen)) ? String(p.hechos.resumen || p.hechos.Resumen) : "";
+    const aiData = (aiAssistant && typeof aiAssistant.getSubmissionData === "function")
+      ? aiAssistant.getSubmissionData()
+      : null;
+    const aiDoc = (forcedDocText || (aiData && aiData.draft) || "").trim();
+    const fallbackDoc = (p.hechos && (p.hechos.hecho_resumen || p.hechos.resumen || p.hechos.Resumen))
+      ? String(p.hechos.hecho_resumen || p.hechos.resumen || p.hechos.Resumen)
+      : "";
+    const docText = aiDoc || fallbackDoc;
 
     await setDoc(ref, {
       estado: "FINALIZADA",
@@ -2150,7 +2282,12 @@ async function saveFinal(){
       // --- resto ---
       hechos: p.hechos,
       doc: docText,
+      docText: docText,
+      ai_session_id: (aiData && aiData.sessionId) ? aiData.sessionId : "",
+      ai_turns: (aiData && Array.isArray(aiData.aiTurns)) ? aiData.aiTurns : [],
+      hechos_ai: (aiData && aiData.hechosAi) ? aiData.hechosAi : null,
       createdAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
 
@@ -2177,6 +2314,7 @@ async function saveFinal(){
 }
 
 function invalidateIfFinalized(){
+  if (DEV_MODE) return;
   const raw = localStorage.getItem(storageKey());
   if (!raw) return;
 
@@ -2271,6 +2409,7 @@ function loadIfAny(){
 }
 
 // INIT
+if (RESET_LOCAL) clearLocalDraft();
 invalidateIfFinalized();
 loadIfAny();
 renderWizard();

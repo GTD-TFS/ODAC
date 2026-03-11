@@ -911,6 +911,12 @@
   <script type="module">
     /* ========= UTIL ========= */
     const $ = (id) => document.getElementById(id);
+    const urlParams = new URLSearchParams(location.search);
+    try {
+      if (urlParams.get("noauth") === "1") localStorage.setItem("denupol_dev_noauth", "1");
+      if (urlParams.get("noauth") === "0") localStorage.removeItem("denupol_dev_noauth");
+    } catch (_) { }
+    const DEV_NO_AUTH = (urlParams.get("noauth") === "1") || (()=>{ try { return localStorage.getItem("denupol_dev_noauth") === "1"; } catch(_) { return false; } })();
 
     const btnGoRegistro = $("btnGoRegistro");
 
@@ -1050,10 +1056,16 @@
       return created + (8 * 60 * 60 * 1000);
     }
     function getPredenunciaExpiryMs(d) {
-      const fin = d && d.finalizedAt;
-      const finMs = tsToMs(fin);
-      if (finMs <= 0) return 0;
-      return finMs + (8 * 60 * 60 * 1000);
+      const finMs = tsToMs(d && d.finalizedAt);
+      if (finMs > 0) return finMs + (8 * 60 * 60 * 1000);
+
+      const baseMs = Math.max(
+        tsToMs(d && d.lastUpdatedAt),
+        tsToMs(d && d.startedAt),
+        tsToMs(d && d.createdAt)
+      );
+      if (baseMs <= 0) return 0;
+      return baseMs + (8 * 60 * 60 * 1000);
     }
     function extractInboxLabel(x) {
       if (!x || typeof x !== "object") return "";
@@ -1420,12 +1432,11 @@
     }
 
 
-    /* ========= FIRESTORE: LISTENER (predenuncias finalizadas) ========= */
+    /* ========= FIRESTORE: LISTENER (predenuncias iniciadas/finalizadas) ========= */
     function startFirestoreListener() {
       const q = query(
         collection(db, "predenuncias"),
-        where("estado", "==", "FINALIZADA"),
-        orderBy("finalizedAt", "desc"),
+        orderBy("createdAt", "desc"),
         limit(50)
       );
 
@@ -1435,7 +1446,7 @@
         const toDelete = [];
         snap.forEach((d) => {
           const x = d.data() || {};
-          const expMs = getPredenunciaExpiryMs({ finalizedAt: x.finalizedAt || null });
+          const expMs = getPredenunciaExpiryMs(x);
           if (expMs > 0 && nowMs >= expMs) {
             toDelete.push(d.id);
             return;
@@ -1459,6 +1470,7 @@
 
           out.push({
             id: d.id,
+            estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
             tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
             labelPublico,
             sexoPublico,
@@ -1468,6 +1480,9 @@
             filiacion: fPlain,
             hechosJson: (x.hechos || {}),
             docText: (x.docText || x.doc || ""),
+            createdAt: x.createdAt || null,
+            startedAt: x.startedAt || null,
+            lastUpdatedAt: x.lastUpdatedAt || null,
             finalizedAt: x.finalizedAt || null
           });
         });
@@ -1476,6 +1491,12 @@
           Promise.all(toDelete.map((id) => deleteDoc(doc(db, "predenuncias", id)).catch(() => { })))
             .catch(() => { });
         }
+
+        out.sort((a, b) => {
+          const aMs = Math.max(tsToMs(a.lastUpdatedAt), tsToMs(a.finalizedAt), tsToMs(a.startedAt), tsToMs(a.createdAt));
+          const bMs = Math.max(tsToMs(b.lastUpdatedAt), tsToMs(b.finalizedAt), tsToMs(b.startedAt), tsToMs(b.createdAt));
+          return bMs - aMs;
+        });
 
         state.denuncias = out;
         renderDenuncias();
@@ -1514,7 +1535,9 @@
               "👨🏼‍💼";
 
         const titulo = d.labelPublico || d.nombre || d.id;
-        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div>`;
+        const estadoTxt = d.estado === "FINALIZADA" ? "FINALIZADA" : "INICIADA";
+        const estadoColor = d.estado === "FINALIZADA" ? "#22c55e" : "#f59e0b";
+        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt}</div>`;
         el.appendChild(left);
 
         const ttl = document.createElement("span");
@@ -1589,8 +1612,9 @@
 
       // predenuncias
       const hasSel = !!state.selected;
+      const canDownloadPred = !!(state.selected && state.selected.estado === "FINALIZADA");
       if (bp) bp.disabled = false;
-      if (bd) bd.disabled = !hasSel;
+      if (bd) bd.disabled = !hasSel || !canDownloadPred;
 
       const bjson = $("btnCopyFinalJson");
       if (bjson) bjson.disabled = true;
@@ -2120,10 +2144,11 @@
     }
     // Persistencia de sesión en el dispositivo (recuerda el login)
     try { await setPersistence(auth, browserLocalPersistence); } catch (_) { }
-
+    if (DEV_NO_AUTH) { try { hideGate(); } catch (_) { } }
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      const effectiveUser = user || (DEV_NO_AUTH ? { uid: "dev-local" } : null);
+      if (effectiveUser) {
         if (appRoot) appRoot.hidden = false;
         hideGate();
         setMode("predenuncias");
@@ -2132,7 +2157,7 @@
         refreshActions();
         setView("json");
         if (!__unsubPred) __unsubPred = startFirestoreListener();
-        state.userUid = user.uid || null;
+        state.userUid = effectiveUser.uid || null;
         if (!__unsubRegs && state.userUid) __unsubRegs = startRegistrosListener(state.userUid);
         if (!__unsubInbox && state.userUid) __unsubInbox = startInboxListener(state.userUid);
         await autoPurgeTokensIfDue();

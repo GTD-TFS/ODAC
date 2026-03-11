@@ -1248,13 +1248,16 @@ $("btnPrev").addEventListener("click", ()=>{
   if (p !== null) goTo(p);
 });
 
-$("btnNext").addEventListener("click", ()=>{
+$("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
   let n = nextVisibleReal(wiz.idx);
   if (n === null && wiz.idx === 0){
     n = nextVisibleReal(0);
     if (n === null && wiz.steps.length) n = 1;
+  }
+  if (wiz.idx === 0 && n !== null){
+    try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
   }
   if (n !== null) goTo(n);
 });
@@ -1362,6 +1365,33 @@ $("btnSaveObjs").addEventListener("click", ()=>{
 // =============================
 // Guardado / carga
 // =============================
+async function saveInitialPredenuncia(){
+  if (!token) return;
+
+  const p = buildPayload();
+  const nombre = ((p.filiacion && p.filiacion["Nombre"]) || "").toString().trim();
+  const apellidos = ((p.filiacion && p.filiacion["Apellidos"]) || "").toString().trim();
+  const ini = apellidos ? apellidos.charAt(0) + "." : "";
+  const label_publico = (nombre + (ini ? " " + ini : "")).trim();
+
+  try{
+    const outLocal = { estado:"INICIADA", ...p };
+    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
+  }catch(_){ }
+
+  const ref = doc(db, "predenuncias", token);
+  await setDoc(ref, {
+    estado: "INICIADA",
+    tipo,
+    token,
+    label_publico,
+    filiacion: p.filiacion,
+    createdAt: serverTimestamp(),
+    startedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
 async function saveFinal(){
   try{
     if (!token){ alert("Falta token en la URL."); return; }
@@ -1382,6 +1412,7 @@ async function saveFinal(){
       filiacion: p.filiacion,
       hechos: p.hechos,
       createdAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
 
