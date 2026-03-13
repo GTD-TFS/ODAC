@@ -1276,9 +1276,8 @@ async function ensureReportCode(){
   if (reportCode) return reportCode;
   if (!token) throw new Error(uiText("missing_token"));
 
-  const sessionRef = doc(db, "tokenSessions", token);
   try{
-    const sessionSnap = await getDoc(sessionRef);
+    const sessionSnap = await getDoc(doc(db, "tokenSessions", token));
     if (sessionSnap.exists()){
       const existing = String(sessionSnap.data().reportCode || "").trim();
       if (existing){
@@ -1288,21 +1287,12 @@ async function ensureReportCode(){
     }
   }catch(_){ }
 
-  for (let i = 0; i < 30; i++){
-    const candidate = randomFiveDigitCode();
-    try{
-      const predSnap = await getDoc(doc(db, "predenuncias", candidate));
-      if (predSnap.exists()) continue;
-    }catch(_){ }
-    reportCode = candidate;
-    await setDoc(sessionRef, {
-      reportCode,
-      lastSeenAt: serverTimestamp()
-    }, { merge: true });
-    return reportCode;
+  let acc = 0;
+  for (let i = 0; i < token.length; i++){
+    acc = ((acc * 31) + token.charCodeAt(i)) % 90000;
   }
-
-  throw new Error("No se pudo reservar un código de 5 dígitos.");
+  reportCode = String(10000 + acc);
+  return reportCode;
 }
 
 function readFiliacion(){
@@ -2452,21 +2442,16 @@ async function saveInitialPredenuncia(){
   const p = buildHechosPayload();
   persistLocalState("INICIADA");
 
-  await setDoc(doc(db, "predenuncias", reportCode), {
-    codigo: reportCode,
+  await setDoc(doc(db, "predenuncias", token), {
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
     label_publico: reportCode,
+    sexo_publico: "",
+    filiacion: {},
     hechos: p.hechos,
     createdAt: serverTimestamp(),
     startedAt: serverTimestamp(),
-    lastUpdatedAt: serverTimestamp()
-  }, { merge: true });
-
-  await setDoc(doc(db, "tokenSessions", token), {
-    reportCode,
-    crimeType: currentTipoFinal(),
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2483,19 +2468,14 @@ async function syncStartedPredenuncia(force = false){
   const fingerprint = computeDraftFingerprint(p);
   if (!force && fingerprint && fingerprint === lastDraftFingerprint) return;
 
-  await setDoc(doc(db, "predenuncias", reportCode), {
-    codigo: reportCode,
+  await setDoc(doc(db, "predenuncias", token), {
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
     label_publico: reportCode,
+    sexo_publico: "",
+    filiacion: {},
     hechos: p.hechos,
-    lastUpdatedAt: serverTimestamp()
-  }, { merge: true });
-
-  await setDoc(doc(db, "tokenSessions", token), {
-    reportCode,
-    crimeType: currentTipoFinal(),
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2511,23 +2491,17 @@ async function saveFinal(){
     const p = buildHechosPayload();
     const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen)) ? String(p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen) : "";
 
-    await setDoc(doc(db, "predenuncias", reportCode), {
-      codigo: reportCode,
+    await setDoc(doc(db, "predenuncias", token), {
       estado: "FINALIZADA",
       tipo: currentTipoFinal(),
       token,
       label_publico: reportCode,
+      sexo_publico: "",
+      filiacion: {},
       hechos: p.hechos,
       doc: docText,
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
-    }, { merge: true });
-
-    await setDoc(doc(db, "tokenSessions", token), {
-      reportCode,
-      crimeType: currentTipoFinal(),
-      finalizedAt: serverTimestamp(),
-      lastUpdatedAt: serverTimestamp()
     }, { merge: true });
 
     draftSyncStarted = true;

@@ -956,6 +956,9 @@
       crypto.getRandomValues(a);
       return Array.from(a, b => b.toString(16).padStart(2, "0")).join("");
     }
+    function randomFiveDigitCode() {
+      return String(10000 + Math.floor(Math.random() * 90000));
+    }
     function purgeAtToday2359() {
       const d = new Date();
       d.setHours(23, 59, 0, 0);
@@ -2093,6 +2096,7 @@
       if (!tipo) return;
 
       const token = randHex(16);
+      const reportCode = randomFiveDigitCode();
       const id = `P-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       const purgeAt = purgeAtToday2359();
       const link = await buildDenuncianteLink(tipo, token);
@@ -2102,6 +2106,7 @@
       try {
         await setDoc(doc(db, "tokenSessions", token), {
           crimeType: tipo,
+          reportCode,
           revoked: false,
           createdAt: serverTimestamp(),
           expiresAt: Timestamp.fromMillis(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000)
