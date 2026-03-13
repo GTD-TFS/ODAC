@@ -365,6 +365,13 @@
 .toastMsg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3000;padding:12px 16px;border-radius:12px;background:rgba(10,18,35,.88);border:1px solid rgba(70,120,255,.45);color:#fff;font-weight:700;box-shadow:0 18px 40px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s ease}
 .toastMsg.show{opacity:1}
 @media(max-width:720px){.resideChoice{font-size:14px;gap:3px}}
+.phaseBox{border:1px solid var(--edge);border-radius:16px;padding:14px;background:rgba(255,255,255,.04);margin-top:14px}
+.phaseBox h3{margin:0 0 8px;font-size:16px}
+.phaseBox p{margin:0;color:var(--muted);font-size:13px}
+.shareActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.shareActions .btn{width:100%}
+.codeBadge{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:10px 14px;border-radius:999px;border:1px solid rgba(214,176,106,.45);background:rgba(214,176,106,.12);color:var(--label);font-weight:900;letter-spacing:.12em}
+@media(max-width:720px){.shareActions{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -516,6 +523,24 @@
       </div>
     </div>
 
+    <div id="personalActions" class="hidden">
+      <div class="phaseBox">
+        <h3 id="personalPhaseTitle"></h3>
+        <p id="personalPhaseIntro"></p>
+        <div class="row" style="margin-top:12px;justify-content:space-between;align-items:center">
+          <div class="muted" id="reportCodeLabel"></div>
+          <div class="codeBadge" id="reportCodeValue">-----</div>
+        </div>
+        <div class="shareActions">
+          <button class="btn secondary" id="btnCopyPersonal" type="button"></button>
+          <button class="btn" id="btnShareDevice" type="button"></button>
+          <button class="btn ok" id="btnShareWhatsapp" type="button"></button>
+          <button class="btn ok" id="btnShareEmail" type="button"></button>
+        </div>
+        <div class="status" id="personalShareStatus"></div>
+      </div>
+    </div>
+
     <div class="hr hrAfterFiliacion"></div>
 
     <div class="wizard" id="wizard" data-step0="1">
@@ -591,7 +616,7 @@
 
 <script type="module">
 import { db, serverTimestamp } from "./firebase.js";
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { GLOBAL_ROUTES, QUESTION_SETS } from "./question_es.js";
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 const $ = (id)=>document.getElementById(id);
@@ -642,6 +667,164 @@ function finalText(key){
     ja:{ title:"届出が正常に送信されました", sub:"このリンクはこれ以上使用できません。" }
   };
   return (m[lang] && m[lang][key]) || m.en[key] || "";
+}
+
+function uiText(key){
+  const L = (document.documentElement.lang || "es").toLowerCase();
+  const lang = L.startsWith("es") ? "es" :
+               L.startsWith("de") ? "de" :
+               L.startsWith("it") ? "it" :
+               L.startsWith("fr") ? "fr" :
+               L.startsWith("ru") ? "ru" :
+               L.startsWith("zh") ? "zh" :
+               L.startsWith("ja") ? "ja" : "en";
+  const m = {
+    es:{
+      incident_title:"Denuncia",
+      personal_title:"Datos personales",
+      personal_phase_title:"Envío voluntario de datos personales",
+      personal_phase_intro:"Estos datos no se guardan en Firebase. Solo se preparan en su dispositivo para compartirlos por el medio que usted decida.",
+      report_code_label:"Código de referencia de la denuncia",
+      copy_personal:"Copiar datos",
+      share_device:"Compartir",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Datos personales preparados para compartir.",
+      share_copied:"Datos personales copiados.",
+      share_unavailable:"Este dispositivo no permite compartir directamente.",
+      share_error:"No se pudo completar el envío.",
+      missing_token:"Falta token en la URL.",
+      facts_sent_title:"Hechos enviados correctamente",
+      facts_sent_sub:"Ahora puede completar sus datos personales y decidir libremente si desea enviarlos."
+    },
+    en:{
+      incident_title:"Incident report",
+      personal_title:"Personal details",
+      personal_phase_title:"Voluntary sharing of personal details",
+      personal_phase_intro:"These details are not stored in Firebase. They are only prepared on your device so you can share them by the method you choose.",
+      report_code_label:"Report reference code",
+      copy_personal:"Copy details",
+      share_device:"Share",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Personal details ready to share.",
+      share_copied:"Personal details copied.",
+      share_unavailable:"This device cannot share directly.",
+      share_error:"The send action could not be completed.",
+      missing_token:"Missing token in URL.",
+      facts_sent_title:"Incident facts sent successfully",
+      facts_sent_sub:"You can now complete your personal details and choose whether to send them."
+    },
+    de:{
+      incident_title:"Anzeige",
+      personal_title:"Persönliche Daten",
+      personal_phase_title:"Freiwilliger Versand persönlicher Daten",
+      personal_phase_intro:"Diese Daten werden nicht in Firebase gespeichert. Sie werden nur auf Ihrem Gerät vorbereitet, damit Sie sie auf dem gewünschten Weg senden können.",
+      report_code_label:"Referenzcode der Anzeige",
+      copy_personal:"Daten kopieren",
+      share_device:"Teilen",
+      share_whatsapp:"WhatsApp",
+      share_email:"E-Mail",
+      share_ready:"Persönliche Daten bereit zum Teilen.",
+      share_copied:"Persönliche Daten kopiert.",
+      share_unavailable:"Dieses Gerät kann nicht direkt teilen.",
+      share_error:"Die Aktion konnte nicht abgeschlossen werden.",
+      missing_token:"Token in der URL fehlt.",
+      facts_sent_title:"Sachverhalt erfolgreich gesendet",
+      facts_sent_sub:"Sie können jetzt Ihre persönlichen Daten ergänzen und frei entscheiden, ob Sie sie senden möchten."
+    },
+    it:{
+      incident_title:"Denuncia",
+      personal_title:"Dati personali",
+      personal_phase_title:"Invio volontario dei dati personali",
+      personal_phase_intro:"Questi dati non vengono salvati in Firebase. Restano solo sul dispositivo per consentirle di condividerli con il mezzo che preferisce.",
+      report_code_label:"Codice di riferimento della denuncia",
+      copy_personal:"Copia dati",
+      share_device:"Condividi",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Dati personali pronti da condividere.",
+      share_copied:"Dati personali copiati.",
+      share_unavailable:"Questo dispositivo non consente la condivisione diretta.",
+      share_error:"Impossibile completare l'invio.",
+      missing_token:"Token mancante nell'URL.",
+      facts_sent_title:"Fatti inviati correttamente",
+      facts_sent_sub:"Ora può completare i suoi dati personali e decidere liberamente se inviarli."
+    },
+    fr:{
+      incident_title:"Déclaration",
+      personal_title:"Données personnelles",
+      personal_phase_title:"Envoi volontaire des données personnelles",
+      personal_phase_intro:"Ces données ne sont pas stockées dans Firebase. Elles sont seulement préparées sur votre appareil afin que vous puissiez les partager par le moyen de votre choix.",
+      report_code_label:"Code de référence de la déclaration",
+      copy_personal:"Copier les données",
+      share_device:"Partager",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Données personnelles prêtes à être partagées.",
+      share_copied:"Données personnelles copiées.",
+      share_unavailable:"Cet appareil ne permet pas le partage direct.",
+      share_error:"L'envoi n'a pas pu être effectué.",
+      missing_token:"Token manquant dans l'URL.",
+      facts_sent_title:"Faits envoyés avec succès",
+      facts_sent_sub:"Vous pouvez maintenant compléter vos données personnelles et décider librement de les envoyer ou non."
+    },
+    ru:{
+      incident_title:"Заявление",
+      personal_title:"Личные данные",
+      personal_phase_title:"Добровольная отправка личных данных",
+      personal_phase_intro:"Эти данные не сохраняются в Firebase. Они подготавливаются только на вашем устройстве, чтобы вы могли отправить их удобным для вас способом.",
+      report_code_label:"Код обращения",
+      copy_personal:"Копировать данные",
+      share_device:"Поделиться",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Личные данные готовы к отправке.",
+      share_copied:"Личные данные скопированы.",
+      share_unavailable:"Это устройство не поддерживает прямую отправку.",
+      share_error:"Не удалось завершить отправку.",
+      missing_token:"В URL отсутствует token.",
+      facts_sent_title:"Факты успешно отправлены",
+      facts_sent_sub:"Теперь вы можете заполнить личные данные и решить, отправлять их или нет."
+    },
+    zh:{
+      incident_title:"报案事实",
+      personal_title:"个人资料",
+      personal_phase_title:"自愿发送个人资料",
+      personal_phase_intro:"这些资料不会保存到 Firebase，只会在您的设备上准备好，供您按自己选择的方式分享。",
+      report_code_label:"报案参考编号",
+      copy_personal:"复制资料",
+      share_device:"分享",
+      share_whatsapp:"WhatsApp",
+      share_email:"电子邮件",
+      share_ready:"个人资料已准备好分享。",
+      share_copied:"个人资料已复制。",
+      share_unavailable:"此设备无法直接分享。",
+      share_error:"无法完成发送操作。",
+      missing_token:"URL 中缺少 token。",
+      facts_sent_title:"事实已成功提交",
+      facts_sent_sub:"现在您可以填写个人资料，并自行决定是否发送。"
+    },
+    ja:{
+      incident_title:"申告内容",
+      personal_title:"個人情報",
+      personal_phase_title:"個人情報の任意送信",
+      personal_phase_intro:"これらの情報は Firebase には保存されません。送信したい方法で共有できるよう、お使いの端末上でのみ準備されます。",
+      report_code_label:"申告参照コード",
+      copy_personal:"情報をコピー",
+      share_device:"共有",
+      share_whatsapp:"WhatsApp",
+      share_email:"メール",
+      share_ready:"個人情報を共有できる状態になりました。",
+      share_copied:"個人情報をコピーしました。",
+      share_unavailable:"この端末では直接共有できません。",
+      share_error:"送信を完了できませんでした。",
+      missing_token:"URL に token がありません。",
+      facts_sent_title:"事実関係を正常に送信しました",
+      facts_sent_sub:"個人情報を入力し、送信するかどうかを自由に選べます。"
+    }
+  };
+  return (m[lang] && m[lang][key]) || m.en[key] || key;
 }
 
 
@@ -1034,7 +1217,7 @@ const AUTOR_EDAD_OPTIONS = ["<20","20-25","25-30","30-40","40-50","50-60",">60"]
 const AUTOR_CONSTITUCION_OPTIONS = ["DELGADA","NORMAL","FUERTE/CORPULENTA","ATLÉTICA","NO DETERMINADA"];
 const AUTOR_ALTURA_OPTIONS = ["<160","160-170","170-180","180-190",">190","NO DETERMINADA"];
 const wiz = {
-  idx: 0,                 // 0 = filiación (pantalla fija)
+  idx: 1,
   steps: [],              // [{q, el, inputEl?}]
   st: {                   // respuestas
     // GLOBAL
@@ -1068,21 +1251,63 @@ const wiz = {
 };
 
 function storageKey(){ return "pred_GLOBAL_"+token; }
-const AUTOSAVE_INTERVAL_MS = 1 * 60 * 1000;
+const AUTOSAVE_INTERVAL_MS = 2 * 60 * 1000;
 let draftSyncStarted = false;
 let draftSyncFinalized = false;
 let lastDraftFingerprint = "";
+let reportCode = "";
+let flowPhase = "hechos";
 
 function computeDraftFingerprint(payload){
   try{
     return JSON.stringify({
       tipo: currentTipoFinal(),
-      filiacion: (payload && payload.filiacion) || {},
       hechos: (payload && payload.hechos) || {}
     });
   }catch(_){
     return "";
   }
+}
+
+function isIncidentPhase(){
+  return flowPhase === "hechos";
+}
+
+function randomFiveDigitCode(){
+  return String(10000 + Math.floor(Math.random() * 90000));
+}
+
+async function ensureReportCode(){
+  if (reportCode) return reportCode;
+  if (!token) throw new Error(uiText("missing_token"));
+
+  const sessionRef = doc(db, "tokenSessions", token);
+  try{
+    const sessionSnap = await getDoc(sessionRef);
+    if (sessionSnap.exists()){
+      const existing = String(sessionSnap.data().reportCode || "").trim();
+      if (existing){
+        reportCode = existing;
+        return reportCode;
+      }
+    }
+  }catch(_){ }
+
+  for (let i = 0; i < 30; i++){
+    const candidate = randomFiveDigitCode();
+    try{
+      const predSnap = await getDoc(doc(db, "predenuncias", candidate));
+      if (predSnap.exists()) continue;
+    }catch(_){ }
+    reportCode = candidate;
+    await setDoc(sessionRef, {
+      reportCode,
+      lastSeenAt: serverTimestamp()
+    }, { merge: true });
+    return reportCode;
+  }
+
+  throw new Error("No se pudo reservar un código de 5 dígitos.");
 }
 
 function readFiliacion(){
@@ -1181,7 +1406,15 @@ if ($("fResideTfeNo")?.checked){
 
   return out;
 }
-function buildPayload(){
+function buildHechosPayload(){
+  return {
+    meta: { tipo_delictivo: currentTipoFinal(), token, reportCode, version: 3, createdAt: new Date().toISOString() },
+    reportCode,
+    hechos: exportForChatGPT(buildHechosAskedOnly())
+  };
+}
+
+function buildLocalPayload(){
   const filiacion = readFiliacion();
   if ($("fResideTfeNo")?.checked){
     const est = ($("fEstanciaEventual")?.value||"").trim();
@@ -1189,10 +1422,13 @@ function buildPayload(){
     if (est) filiacion["estancia_eventual"] = est;
     if (fv) filiacion["fecha_vuelta"] = fv;
   }
+  const hechosPayload = buildHechosPayload();
   return {
-    meta: { tipo_delictivo: currentTipoFinal(), token, version: 2, createdAt: new Date().toISOString() },
+    meta: hechosPayload.meta,
+    reportCode,
+    phase: flowPhase,
     filiacion,
-    hechos: exportForChatGPT(buildHechosAskedOnly())
+    hechos: hechosPayload.hechos
   };
 }
 function exportForChatGPT(state, map = EXPORT_KEY_MAP){
@@ -1647,19 +1883,18 @@ function renderWizard(){
   // Si el flujo cambia (GLOBAL_ROUTES), asegúrate de que el índice actual sigue siendo válido y visible.
   const last = lastRealStep();
   if (wiz.idx > last) wiz.idx = last;
-  if (wiz.idx < 0) wiz.idx = 0;
+  if (wiz.idx < 1) wiz.idx = 1;
   if (!isRealStepVisible(wiz.idx)){
     const n = nextVisibleReal(wiz.idx);
     const p = prevVisibleReal(wiz.idx);
-    wiz.idx = (n !== null) ? n : (p !== null) ? p : 0;
+    wiz.idx = (n !== null) ? n : (p !== null) ? p : 1;
   }
 
   updateStepUI(false);
 }
 
 function totalVisibleSteps(){
-  // paso 0 (filiación) + visibles de preguntas
-  let n = 1;
+  let n = 0;
   for (const s of wiz.steps){
     if (shouldShowQuestion(s.q)) n++;
   }
@@ -1667,8 +1902,7 @@ function totalVisibleSteps(){
 }
 
 function visibleStepIndices(){
-  // índices lógicos: 0=filiación, 1..N preguntas visibles en orden
-  const out = [0];
+  const out = [];
   let k = 1;
   for (const s of wiz.steps){
     if (shouldShowQuestion(s.q)) out.push(k);
@@ -1678,17 +1912,13 @@ function visibleStepIndices(){
 }
 
 function logicalToRealIndex(logicalIdx){
-  // logicalIdx: 0=filiación; 1.. = orden de preguntas (incluye ocultas)
-  // Aquí usamos wiz.idx como índice REAL: 0=filiación, 1..=posición en wiz.steps
-  // Mantendremos wiz.idx como REAL.
   return logicalIdx;
 }
 
-function firstRealStep(){ return 0; }
+function firstRealStep(){ return 1; }
 function lastRealStep(){ return wiz.steps.length; }
 
 function isRealStepVisible(realIdx){
-  if (realIdx === 0) return true;
   const s = wiz.steps[realIdx-1];
   if (!s) return false;
   return shouldShowQuestion(s.q);
@@ -1710,70 +1940,64 @@ function prevVisibleReal(from){
 
 function updateProgress(){
   const total = totalVisibleSteps();
-  // posición visible actual
-  let pos = 1;
-  if (wiz.idx === 0){
-    pos = 1;
-  } else {
-    // cuenta visibles hasta wiz.idx
-    pos = 1;
-    for (let i = 1; i <= wiz.idx; i++){
-      if (isRealStepVisible(i)) pos++;
-    }
+  let pos = 0;
+  for (let i = 1; i <= wiz.idx; i++){
+    if (isRealStepVisible(i)) pos++;
   }
   const p = $("wizProgress");
-  if (p) p.textContent = `Paso ${pos} de ${total}`;
+  if (p) p.textContent = total ? `Paso ${Math.min(Math.max(pos, 1), total)} de ${total}` : "";
 }
 
 function updateStepUI(focus){
-  // Mostrar/ocultar la sección de filiación fuera del wizard
   const bf = document.getElementById("boxFiliacion");
-  if (bf) bf.classList.toggle("isHidden", wiz.idx !== 0);
+  const wizard = document.getElementById("wizard");
+  const personal = document.getElementById("personalActions");
+  const hr = document.querySelector(".hrAfterFiliacion");
+  const showPersonal = !isIncidentPhase();
+  if (bf) bf.classList.toggle("isHidden", !showPersonal);
+  if (wizard) wizard.classList.toggle("hidden", showPersonal);
+  if (personal) personal.classList.toggle("hidden", !showPersonal);
+  if (hr) hr.classList.toggle("hidden", !showPersonal);
   const isMobile = window.matchMedia("(max-width:720px)").matches;
-  const lockScroll = (wiz.idx !== 0) && isMobile;
+  const lockScroll = isIncidentPhase() && isMobile;
   document.body.classList.toggle("noScroll", lockScroll);
 
-  // Título superior (donde estaba "Predenuncia")
   const pt = document.getElementById("pageTitle");
   if (pt){
-    if (wiz.idx === 0){
-      pt.textContent = "Datos de filiación";
+    if (showPersonal){
+      pt.textContent = uiText("personal_title");
     } else {
       const s = wiz.steps[wiz.idx-1];
-      pt.textContent = (s && s.q && s.q.title) ? String(s.q.title) : "";
+      pt.textContent = (s && s.q && s.q.title) ? String(s.q.title) : uiText("incident_title");
     }
   }
 
-  // Pasos dinámicos
   for (let i=0;i<wiz.steps.length;i++){
     const realIdx = i+1;
-    const isActive = (wiz.idx === realIdx);
+    const isActive = isIncidentPhase() && (wiz.idx === realIdx);
     wiz.steps[i].el.classList.toggle("isActive", isActive);
   }
 
-  // Botones
   const prev = $("btnPrev");
   const next = $("btnNext");
   const fin = $("btnFinish");
-
-  const hasPrev = prevVisibleReal(wiz.idx) !== null;
-  prev.disabled = !hasPrev;
-
-  // En la pantalla de filiación (idx 0) SIEMPRE mostramos SIGUIENTE y ocultamos FINALIZAR.
-  // Evita que un fallo de cálculo de visibilidad deje al usuario con FINALIZAR desde el inicio.
-  if (wiz.idx === 0){
-    next.style.display = "inline-block";
-    fin.style.display = "none";
-  } else {
-    const hasNext = nextVisibleReal(wiz.idx) !== null;
-    next.style.display = hasNext ? "inline-block" : "none";
-    fin.style.display = hasNext ? "none" : "inline-block";
+  if (prev && next && fin){
+    const hasPrev = isIncidentPhase() && prevVisibleReal(wiz.idx) !== null;
+    prev.disabled = !hasPrev;
+    if (showPersonal){
+      prev.style.display = "none";
+      next.style.display = "none";
+      fin.style.display = "none";
+    } else {
+      prev.style.display = "inline-block";
+      const hasNext = nextVisibleReal(wiz.idx) !== null;
+      next.style.display = hasNext ? "inline-block" : "none";
+      fin.style.display = hasNext ? "none" : "inline-block";
+    }
   }
 
   updateProgress();
-
-  // SIN AUTOFOCUS
-// El teclado, calendario o reloj solo se abre si el usuario toca el campo
+  refreshPersonalPhaseUI();
 }
 
 function isGtdBypass(){
@@ -1785,67 +2009,6 @@ function isGtdBypass(){
 function validateCurrentStep(){
   if (isGtdBypass()) return true;
   setStatus("");
-
-  if (wiz.idx === 0){
-    const nombre = ($("fNombre")?.value||"").trim();
-    const apellidos = ($("fApellidos")?.value||"").trim();
-    const tipoDoc = ($("fTipoDoc")?.value||"").trim();
-    const otroDoc = ($("fOtroDoc")?.value||"").trim();
-    const numDoc = ($("fNumDoc")?.value||"").trim();
-    const sexo = ($("fSexo")?.value||"").trim();
-    const fechaNac = ($("fNacFecha")?.value||"").trim();
-    const dir = ($("fDomDir")?.value||"").trim();
-
-    const isIndoc = /INDOCUMENTAD/.test(normUp(tipoDoc));
-
-    if (!nombre || !apellidos || !tipoDoc || !sexo || !fechaNac || !dir){
-      return failValidation("Completa los campos obligatorios para continuar.");
-    }
-
-    if (tipoDoc === "Otro documento de Identidad" && !otroDoc){
-      return failValidation("Indica cuál es el otro documento de identidad.");
-    }
-
-    if (!isIndoc && !numDoc){
-      return failValidation("El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.");
-    }
-
-    if (tipoDoc === "DNI" && /^[A-Za-z]/.test(numDoc)){
-      return failValidation("Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.");
-    }
-
-    const canonCountry = (v)=> (typeof canonicalCountry === "function") ? canonicalCountry(v) : normUp(v);
-
-    const nat = canonCountry($("fNac")?.value);
-    if (!nat || !__PAISES_SET.has(nat)) return failValidation("Selecciona una NACIONALIDAD válida (usa las píldoras).");
-
-    const paisNac = canonCountry($("fNacPais")?.value);
-    if (!paisNac || !__PAISES_SET.has(paisNac)) return failValidation("Selecciona un PAÍS de nacimiento válido (usa las píldoras).");
-
-    if (paisNac === "ESPAÑA") {
-      const prov = ($("fNacProv")?.value||"").trim();
-      const mun = ($("fNacMun")?.value||"").trim();
-      if (!prov || !mun) return failValidation("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
-    }
-
-    const paisDom = canonCountry($("fDomPais")?.value);
-    if (!paisDom || !__PAISES_SET.has(paisDom)) return failValidation("Selecciona un país de DOMICILIO válido (usa las píldoras).");
-
-    if (paisDom === "ESPAÑA") {
-      const provD = ($("fDomProv")?.value||"").trim();
-      const munD = ($("fDomMun")?.value||"").trim();
-      if (!provD || !munD) return failValidation("Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
-    }
-
-    if ($("fResideTfeNo")?.checked){
-      const est = ($("fEstanciaEventual")?.value||"").trim();
-      const fv = ($("fFechaVuelta")?.value||"").trim();
-      if (!est || !fv) return failValidation("Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.");
-    }
-
-    return true;
-  }
-
   const s = wiz.steps[wiz.idx-1];
   if (!s) return true;
   return true;
@@ -1865,11 +2028,7 @@ $("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
   let n = nextVisibleReal(wiz.idx);
-  if (n === null && wiz.idx === 0){
-    n = nextVisibleReal(0);
-    if (n === null && wiz.steps.length) n = 1;
-  }
-  if (wiz.idx === 0 && n !== null){
+  if (!draftSyncStarted){
     try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
   }
   if (n !== null) goTo(n);
@@ -1878,6 +2037,22 @@ $("btnNext").addEventListener("click", async ()=>{
 $("btnFinish").addEventListener("click", async ()=>{
   await saveFinal();
 });
+$("btnCopyPersonal")?.addEventListener("click", ()=>{ void sharePersonalData("copy"); });
+$("btnShareDevice")?.addEventListener("click", ()=>{ void sharePersonalData("device"); });
+$("btnShareWhatsapp")?.addEventListener("click", ()=>{ void sharePersonalData("whatsapp"); });
+$("btnShareEmail")?.addEventListener("click", ()=>{ void sharePersonalData("email"); });
+let draftStartTimer = null;
+function scheduleInitialDraftSave(){
+  if (!isIncidentPhase() || draftSyncStarted || draftSyncFinalized) return;
+  clearTimeout(draftStartTimer);
+  draftStartTimer = setTimeout(()=>{
+    if (!draftSyncStarted && isIncidentPhase()){
+      void saveInitialPredenuncia().catch(err => console.warn("saveInitialPredenuncia", err));
+    }
+  }, 600);
+}
+$("dynSteps")?.addEventListener("input", scheduleInitialDraftSave);
+$("dynSteps")?.addEventListener("change", scheduleInitialDraftSave);
 
 // =============================
 // Objetos modal (se mantiene)
@@ -2135,29 +2310,168 @@ $("btnSaveAuthors").addEventListener("click", ()=>{
 // =============================
 // Guardado / carga
 // =============================
+function persistLocalState(status){
+  try{
+    const outLocal = {
+      estado: status || (draftSyncFinalized ? "FINALIZADA" : draftSyncStarted ? "INICIADA" : "NUEVA"),
+      ...buildLocalPayload()
+    };
+    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
+  }catch(_){ }
+}
+
+function refreshPersonalPhaseUI(){
+  const title = $("personalPhaseTitle");
+  const intro = $("personalPhaseIntro");
+  const codeLabel = $("reportCodeLabel");
+  const codeValue = $("reportCodeValue");
+  const copyBtn = $("btnCopyPersonal");
+  const shareBtn = $("btnShareDevice");
+  const waBtn = $("btnShareWhatsapp");
+  const mailBtn = $("btnShareEmail");
+  if (title) title.textContent = uiText("personal_phase_title");
+  if (intro) intro.textContent = uiText("personal_phase_intro");
+  if (codeLabel) codeLabel.textContent = uiText("report_code_label");
+  if (codeValue) codeValue.textContent = reportCode || "-----";
+  if (copyBtn) copyBtn.textContent = uiText("copy_personal");
+  if (shareBtn) shareBtn.textContent = uiText("share_device");
+  if (waBtn) waBtn.textContent = uiText("share_whatsapp");
+  if (mailBtn) mailBtn.textContent = uiText("share_email");
+}
+
+function setPersonalShareStatus(text){
+  const el = $("personalShareStatus");
+  if (el) el.textContent = text || "";
+}
+
+function validatePersonalData(){
+  if (isGtdBypass()) return true;
+  const nombre = ($("fNombre")?.value||"").trim();
+  const apellidos = ($("fApellidos")?.value||"").trim();
+  const tipoDoc = ($("fTipoDoc")?.value||"").trim();
+  const otroDoc = ($("fOtroDoc")?.value||"").trim();
+  const numDoc = ($("fNumDoc")?.value||"").trim();
+  const sexo = ($("fSexo")?.value||"").trim();
+  const fechaNac = ($("fNacFecha")?.value||"").trim();
+  const dir = ($("fDomDir")?.value||"").trim();
+
+  const isIndoc = /INDOCUMENTAD/.test(normUp(tipoDoc));
+  if (!nombre || !apellidos || !tipoDoc || !sexo || !fechaNac || !dir){
+    return failValidation("Completa los campos obligatorios de datos personales.");
+  }
+  if (tipoDoc === "Otro documento de Identidad" && !otroDoc){
+    return failValidation("Indica cuál es el otro documento de identidad.");
+  }
+  if (!isIndoc && !numDoc){
+    return failValidation("El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.");
+  }
+  if (tipoDoc === "DNI" && /^[A-Za-z]/.test(numDoc)){
+    return failValidation("Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.");
+  }
+
+  const canonCountry = (v)=> (typeof canonicalCountry === "function") ? canonicalCountry(v) : normUp(v);
+  const nat = canonCountry($("fNac")?.value);
+  if (!nat || !__PAISES_SET.has(nat)) return failValidation("Selecciona una NACIONALIDAD válida (usa las píldoras).");
+
+  const paisNac = canonCountry($("fNacPais")?.value);
+  if (!paisNac || !__PAISES_SET.has(paisNac)) return failValidation("Selecciona un PAÍS de nacimiento válido (usa las píldoras).");
+  if (paisNac === "ESPAÑA") {
+    const prov = ($("fNacProv")?.value||"").trim();
+    const mun = ($("fNacMun")?.value||"").trim();
+    if (!prov || !mun) return failValidation("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+  }
+
+  const paisDom = canonCountry($("fDomPais")?.value);
+  if (!paisDom || !__PAISES_SET.has(paisDom)) return failValidation("Selecciona un país de DOMICILIO válido (usa las píldoras).");
+  if (paisDom === "ESPAÑA") {
+    const provD = ($("fDomProv")?.value||"").trim();
+    const munD = ($("fDomMun")?.value||"").trim();
+    if (!provD || !munD) return failValidation("Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+  }
+
+  if ($("fResideTfeNo")?.checked){
+    const est = ($("fEstanciaEventual")?.value||"").trim();
+    const fv = ($("fFechaVuelta")?.value||"").trim();
+    if (!est || !fv) return failValidation("Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.");
+  }
+  return true;
+}
+
+function buildPersonalShareText(){
+  const filiacion = readFiliacion();
+  const lines = [];
+  if (reportCode) lines.push(`${uiText("report_code_label")}: ${reportCode}`);
+  for (const [k, v] of Object.entries(filiacion)){
+    const s = String(v || "").trim();
+    if (!s) continue;
+    lines.push(`${k}: ${s}`);
+  }
+  if ($("fResideTfeNo")?.checked){
+    const est = ($("fEstanciaEventual")?.value||"").trim();
+    const fv = ($("fFechaVuelta")?.value||"").trim();
+    if (est) lines.push(`estancia_eventual: ${est}`);
+    if (fv) lines.push(`fecha_vuelta: ${fv}`);
+  }
+  return lines.join("\n");
+}
+
+async function sharePersonalData(mode){
+  if (!validatePersonalData()) return;
+  const text = buildPersonalShareText();
+  persistLocalState("FINALIZADA");
+  try{
+    if (mode === "copy"){
+      await navigator.clipboard.writeText(text);
+      setPersonalShareStatus(uiText("share_copied"));
+      showToast(uiText("share_copied"));
+      return;
+    }
+    if (mode === "device"){
+      if (!navigator.share) throw new Error(uiText("share_unavailable"));
+      await navigator.share({ title: uiText("personal_title"), text });
+      setPersonalShareStatus(uiText("share_ready"));
+      return;
+    }
+    if (mode === "whatsapp"){
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      setPersonalShareStatus(uiText("share_ready"));
+      return;
+    }
+    if (mode === "email"){
+      const subject = encodeURIComponent(`${uiText("personal_title")}${reportCode ? " · " + reportCode : ""}`);
+      const body = encodeURIComponent(text);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      setPersonalShareStatus(uiText("share_ready"));
+    }
+  }catch(err){
+    const msg = (err && err.message) ? err.message : uiText("share_error");
+    setPersonalShareStatus(msg);
+    alert(msg);
+  }
+}
+
 async function saveInitialPredenuncia(){
   if (!token) return;
 
-  const p = buildPayload();
-  try{
-    const outLocal = { estado:"INICIADA", ...p };
-    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
-  }catch(_){ }
+  reportCode = await ensureReportCode();
+  const p = buildHechosPayload();
+  persistLocalState("INICIADA");
 
-  const ref = doc(db, "predenuncias", token);
-  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-  const sexo_publico = ((p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]) : "").trim();
-  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-
-  await setDoc(ref, {
+  await setDoc(doc(db, "predenuncias", reportCode), {
+    codigo: reportCode,
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    filiacion_enc,
-    label_publico,
-    sexo_publico,
+    label_publico: reportCode,
+    hechos: p.hechos,
     createdAt: serverTimestamp(),
     startedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+
+  await setDoc(doc(db, "tokenSessions", token), {
+    reportCode,
+    crimeType: currentTipoFinal(),
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2169,115 +2483,74 @@ async function saveInitialPredenuncia(){
 async function syncStartedPredenuncia(force = false){
   if (!draftSyncStarted || draftSyncFinalized || !token) return;
 
-  const p = buildPayload();
+  reportCode = await ensureReportCode();
+  const p = buildHechosPayload();
   const fingerprint = computeDraftFingerprint(p);
   if (!force && fingerprint && fingerprint === lastDraftFingerprint) return;
 
-  const ref = doc(db, "predenuncias", token);
-  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-  const sexo_publico = ((p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]) : "").trim();
-  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-
-  await setDoc(ref, {
+  await setDoc(doc(db, "predenuncias", reportCode), {
+    codigo: reportCode,
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    filiacion_enc,
-    label_publico,
-    sexo_publico,
+    label_publico: reportCode,
     hechos: p.hechos,
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
+  await setDoc(doc(db, "tokenSessions", token), {
+    reportCode,
+    crimeType: currentTipoFinal(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+
+  persistLocalState("INICIADA");
   lastDraftFingerprint = fingerprint;
 }
 
 async function saveFinal(){
   try{
-    if (!token){ alert("Falta token en la URL."); return; }
+    if (!token){ alert(uiText("missing_token")); return; }
 
-    const p = buildPayload();
+    reportCode = await ensureReportCode();
+    const p = buildHechosPayload();
+    const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen)) ? String(p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen) : "";
 
-    try{
-      const outLocal = { estado:"FINALIZADA", ...p };
-      localStorage.setItem(storageKey(), JSON.stringify(outLocal));
-    }catch(_){ }
-
-    const ref = doc(db, "predenuncias", token);
-
-    // Enviamos a Firebase: filiación CIFRADA + doc en claro (editable en Denupol)
-    const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-    const sexo_publico = ((p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]) : "").trim();
-    const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-
-    // "doc" abierto: mínimo viable = resumen (o vacío). Denupol lo editará.
-    const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen)) ? String(p.hechos.resumen || p.hechos.Resumen) : "";
-
-    await setDoc(ref, {
+    await setDoc(doc(db, "predenuncias", reportCode), {
+      codigo: reportCode,
       estado: "FINALIZADA",
       tipo: currentTipoFinal(),
       token,
-
-      // --- lo que Denupol necesita sin ver filiación en claro ---
-      filiacion_enc,
-      label_publico,
-      sexo_publico,
-
-      // --- resto ---
+      label_publico: reportCode,
       hechos: p.hechos,
       doc: docText,
-      createdAt: serverTimestamp(),
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
 
+    await setDoc(doc(db, "tokenSessions", token), {
+      reportCode,
+      crimeType: currentTipoFinal(),
+      finalizedAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp()
+    }, { merge: true });
+
+    draftSyncStarted = true;
     draftSyncFinalized = true;
+    flowPhase = "filiacion";
+    persistLocalState("FINALIZADA");
+    setPersonalShareStatus("");
 
     const msg = $("doneMsg");
-    if (msg) msg.style.display = "block";
-    document.body.innerHTML = `
-      <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
-        <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
-          <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-            Denuncia enviada correctamente
-          </h2>
-          <p style="margin:0;color:rgba(255,255,255,.72)">
-            Este enlace ya no puede volver a utilizarse.
-          </p>
-        </div>
-      </div>
-    `;
-    return;
-
+    if (msg){
+      msg.style.display = "block";
+      msg.textContent = `${uiText("facts_sent_title")} ${reportCode ? "· " + reportCode : ""}`;
+    }
+    updateStepUI(false);
+    alert(`${uiText("facts_sent_title")}.\n${uiText("facts_sent_sub")}`);
   }catch(err){
     const m = (err && err.message) ? err.message : String(err);
     alert("ERROR AL FINALIZAR: " + m);
-  }
-}
-
-function invalidateIfFinalized(){
-  const raw = localStorage.getItem(storageKey());
-  if (!raw) return;
-
-  try{
-    const x = JSON.parse(raw);
-    if (x.estado === "FINALIZADA"){
-      document.body.innerHTML = `
-        <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
-          <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
-            <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-              Denuncia enviada correctamente
-            </h2>
-            <p style="margin:0;color:rgba(255,255,255,.72)">
-              Este enlace ya no puede volver a utilizarse.
-            </p>
-          </div>
-        </div>
-      `;
-      throw "__STOP__";
-    }
-  }catch(e){
-    if (e !== "__STOP__") {}
   }
 }
 
@@ -2286,6 +2559,10 @@ function loadIfAny(){
   if (!raw) return;
   try{
     const x = JSON.parse(raw);
+    flowPhase = x.phase === "filiacion" ? "filiacion" : "hechos";
+    reportCode = String(x.reportCode || x.meta?.reportCode || "").trim();
+    draftSyncStarted = x.estado === "INICIADA" || x.estado === "FINALIZADA";
+    draftSyncFinalized = x.estado === "FINALIZADA";
 
     // Filiación
     const f = x.filiacion || {};
@@ -2350,34 +2627,28 @@ function loadIfAny(){
 }
 
 // INIT
-invalidateIfFinalized();
 loadIfAny();
 try{
-  const raw = localStorage.getItem(storageKey());
-  if (raw){
-    const x = JSON.parse(raw);
-    draftSyncStarted = x.estado === "INICIADA";
-    draftSyncFinalized = x.estado === "FINALIZADA";
-    if (draftSyncStarted) lastDraftFingerprint = computeDraftFingerprint(buildPayload());
-  }
+  if (draftSyncStarted) lastDraftFingerprint = computeDraftFingerprint(buildHechosPayload());
 }catch(_){ }
 renderWizard();
 applyTipoDocVisibility();
 updateObjsCount();
 renderNacPills();
+refreshPersonalPhaseUI();
 try{ toggleNacEsUI(); }catch(_){ }
 try{ toggleDomEsUI(); }catch(_){ }
 try{
   const isMobile = window.matchMedia("(max-width:720px)").matches;
-  document.body.classList.toggle("noScroll", (wiz.idx !== 0) && isMobile);
+  document.body.classList.toggle("noScroll", isIncidentPhase() && isMobile);
 }catch(_){ }
 window.addEventListener("resize", ()=>{
   try{ updateStepUI(false); }catch(_){ }
 });
 window.setInterval(()=>{ void syncStartedPredenuncia(false).catch(err => console.warn("autosavePredenuncia", err)); }, AUTOSAVE_INTERVAL_MS);
 // Debug helpers for browser console
-window.dumpPredenunciaPayload = () => buildPayload();
-window.dumpPredenunciaHechos = () => buildPayload().hechos;
+window.dumpPredenunciaPayload = () => buildLocalPayload();
+window.dumpPredenunciaHechos = () => buildHechosPayload().hechos;
 // Si hay tipo desconocido, lo dejamos funcionando igualmente.
 </script>
 </body>

@@ -1224,28 +1224,18 @@
 
     function mapPredenunciaDoc(d) {
       const x = d.data() || {};
-
-      const fPlain = x.filiacion || {};
-      const filiacionEnc = x.filiacion_enc || x.filiacionEnc || x.filiacionEncrypted || null;
-      const sexoPublico = (x.sexo_publico || x.sexoPublico || fPlain.Sexo || fPlain.SEXO || "").toString().toUpperCase();
-
-      let labelPublico = (x.label_publico || x.labelPublico || "").toString().trim();
-      if (!labelPublico) {
-        const nom = (fPlain["Nombre"] || "").toString().trim();
-        const aps = (fPlain["Apellidos"] || "").toString().trim();
-        const ini = aps ? aps.trim().charAt(0) : "";
-        labelPublico = (nom + (ini ? (" " + ini + ".") : "")).trim();
-      }
-      if (!labelPublico) labelPublico = d.id;
+      const codigo = (x.codigo || x.reportCode || d.id || "").toString().trim();
+      const labelPublico = (x.label_publico || x.labelPublico || codigo || d.id).toString().trim() || d.id;
 
       return {
         id: d.id,
+        codigo,
         estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
         tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
         labelPublico,
-        sexoPublico,
-        filiacionEnc: (filiacionEnc || fPlain),
-        filiacion: fPlain,
+        sexoPublico: "",
+        filiacionEnc: null,
+        filiacion: {},
         hechosJson: (x.hechos || {}),
         docText: (x.docText || x.doc || ""),
         createdAt: x.createdAt || null,
@@ -1259,7 +1249,7 @@
       if (!nextSelected) return;
       state.selected = nextSelected;
       state.denuncias = state.denuncias.map((item) => item.id === nextSelected.id ? nextSelected : item);
-      $("selectedRef").textContent = nextSelected.labelPublico || nextSelected.nombre || nextSelected.id;
+      $("selectedRef").textContent = nextSelected.codigo || nextSelected.labelPublico || nextSelected.id;
       renderSelectedIntoArea();
       refreshActions();
       if (state.mode === "predenuncias") renderDenuncias();
@@ -1566,17 +1556,11 @@
 
         const left = document.createElement("div");
         left.className = "left";
-        const sexo = (d.sexoPublico || d.filiacion?.Sexo || d.filiacion?.SEXO || "").toString().toUpperCase();
-
-        const icon =
-          sexo.startsWith("F") ? "🙍🏻‍♀️" :
-            sexo.startsWith("MUJ") ? "🙍🏻‍♀️" :
-              "👨🏼‍💼";
-
-        const titulo = d.labelPublico || d.nombre || d.id;
+        const icon = "🧾";
+        const titulo = d.codigo || d.labelPublico || d.id;
         const estadoTxt = d.estado === "FINALIZADA" ? "FINALIZADA" : "INICIADA";
         const estadoColor = d.estado === "FINALIZADA" ? "#22c55e" : "#f59e0b";
-        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt}</div>`;
+        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt} · ${escapeHtml(d.tipo || "")}</div>`;
         el.appendChild(left);
 
         const ttl = document.createElement("span");
@@ -1627,7 +1611,7 @@
       startSelectedPredListener(d.id);
       state.dirtyDoc = false;
 
-      $("selectedRef").textContent = d.labelPublico || d.nombre || d.id;
+      $("selectedRef").textContent = d.codigo || d.labelPublico || d.id;
       $("workStatus").textContent = "";
       renderSelectedIntoArea();
       refreshActions();

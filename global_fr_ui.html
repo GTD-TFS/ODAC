@@ -365,6 +365,13 @@
 .resideChoice input{accent-color:var(--brand);margin:0;transform:scale(1.02)}
 .toastMsg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3000;padding:12px 16px;border-radius:12px;background:rgba(10,18,35,.88);border:1px solid rgba(70,120,255,.45);color:#fff;font-weight:700;box-shadow:0 18px 40px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s ease}
 .toastMsg.show{opacity:1}
+.phaseBox{border:1px solid var(--edge);border-radius:16px;padding:14px;background:rgba(255,255,255,.04);margin-top:14px}
+.phaseBox h3{margin:0 0 8px;font-size:16px}
+.phaseBox p{margin:0;color:var(--muted);font-size:13px}
+.shareActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.shareActions .btn{width:100%}
+.codeBadge{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:10px 14px;border-radius:999px;border:1px solid rgba(214,176,106,.45);background:rgba(214,176,106,.12);color:var(--label);font-weight:900;letter-spacing:.12em}
+@media(max-width:720px){.shareActions{grid-template-columns:1fr}}
 @media(max-width:720px){.resideChoice{font-size:14px;gap:3px}}
 
 </style>
@@ -513,6 +520,23 @@
         </div>
       </div>
     </div>
+    <div id="personalActions" class="hidden">
+      <div class="phaseBox">
+        <h3 id="personalPhaseTitle"></h3>
+        <p id="personalPhaseIntro"></p>
+        <div class="row" style="margin-top:12px;justify-content:space-between;align-items:center">
+          <div class="muted" id="reportCodeLabel"></div>
+          <div class="codeBadge" id="reportCodeValue">-----</div>
+        </div>
+        <div class="shareActions">
+          <button class="btn secondary" id="btnCopyPersonal" type="button"></button>
+          <button class="btn" id="btnShareDevice" type="button"></button>
+          <button class="btn ok" id="btnShareWhatsapp" type="button"></button>
+          <button class="btn ok" id="btnShareEmail" type="button"></button>
+        </div>
+        <div class="status" id="personalShareStatus"></div>
+      </div>
+    </div>
 
     <div class="hr hrAfterFiliacion"></div>
 
@@ -588,7 +612,7 @@
 <script src="./question_fr.js"></script>
 <script type="module">
 import { db, serverTimestamp } from "./firebase.js";
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 const { UI_EN, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP } = window.QUESTION_FR;
 const $ = (id)=>document.getElementById(id);
 const qs = new URLSearchParams(location.search);
@@ -640,7 +664,200 @@ function finalText(key){
   return (m[lang] && m[lang][key]) || m.en[key] || "";
 }
 
+function uiText(key){
+  const L = (document.documentElement.lang || "es").toLowerCase();
+  const lang = L.startsWith("es") ? "es" :
+               L.startsWith("de") ? "de" :
+               L.startsWith("it") ? "it" :
+               L.startsWith("fr") ? "fr" :
+               L.startsWith("ru") ? "ru" :
+               L.startsWith("zh") ? "zh" :
+               L.startsWith("ja") ? "ja" : "en";
+  const m = {
+    es:{
+      incident_title:"Denuncia",
+      personal_title:"Datos personales",
+      personal_phase_title:"Envío voluntario de datos personales",
+      personal_phase_intro:"Estos datos no se guardan en Firebase. Solo se preparan en su dispositivo para compartirlos por el medio que usted decida.",
+      report_code_label:"Código de referencia de la denuncia",
+      copy_personal:"Copiar datos",
+      share_device:"Compartir",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Datos personales preparados para compartir.",
+      share_copied:"Datos personales copiados.",
+      share_unavailable:"Este dispositivo no permite compartir directamente.",
+      share_error:"No se pudo completar el envío.",
+      missing_token:"Falta token en la URL.",
+      facts_sent_title:"Hechos enviados correctamente",
+      facts_sent_sub:"Ahora puede completar sus datos personales y decidir libremente si desea enviarlos."
+    },
+    en:{
+      incident_title:"Incident report",
+      personal_title:"Personal details",
+      personal_phase_title:"Voluntary sharing of personal details",
+      personal_phase_intro:"These details are not stored in Firebase. They are only prepared on your device so you can share them by the method you choose.",
+      report_code_label:"Report reference code",
+      copy_personal:"Copy details",
+      share_device:"Share",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Personal details ready to share.",
+      share_copied:"Personal details copied.",
+      share_unavailable:"This device cannot share directly.",
+      share_error:"The send action could not be completed.",
+      missing_token:"Missing token in URL.",
+      facts_sent_title:"Incident facts sent successfully",
+      facts_sent_sub:"You can now complete your personal details and choose whether to send them."
+    },
+    de:{
+      incident_title:"Anzeige",
+      personal_title:"Persönliche Daten",
+      personal_phase_title:"Freiwilliger Versand persönlicher Daten",
+      personal_phase_intro:"Diese Daten werden nicht in Firebase gespeichert. Sie werden nur auf Ihrem Gerät vorbereitet, damit Sie sie auf dem gewünschten Weg senden können.",
+      report_code_label:"Referenzcode der Anzeige",
+      copy_personal:"Daten kopieren",
+      share_device:"Teilen",
+      share_whatsapp:"WhatsApp",
+      share_email:"E-Mail",
+      share_ready:"Persönliche Daten bereit zum Teilen.",
+      share_copied:"Persönliche Daten kopiert.",
+      share_unavailable:"Dieses Gerät kann nicht direkt teilen.",
+      share_error:"Die Aktion konnte nicht abgeschlossen werden.",
+      missing_token:"Token in der URL fehlt.",
+      facts_sent_title:"Sachverhalt erfolgreich gesendet",
+      facts_sent_sub:"Sie können jetzt Ihre persönlichen Daten ergänzen und frei entscheiden, ob Sie sie senden möchten."
+    },
+    it:{
+      incident_title:"Denuncia",
+      personal_title:"Dati personali",
+      personal_phase_title:"Invio volontario dei dati personali",
+      personal_phase_intro:"Questi dati non vengono salvati in Firebase. Restano solo sul dispositivo per consentirle di condividerli con il mezzo che preferisce.",
+      report_code_label:"Codice di riferimento della denuncia",
+      copy_personal:"Copia dati",
+      share_device:"Condividi",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Dati personali pronti da condividere.",
+      share_copied:"Dati personali copiati.",
+      share_unavailable:"Questo dispositivo non consente la condivisione diretta.",
+      share_error:"Impossibile completare l'invio.",
+      missing_token:"Token mancante nell'URL.",
+      facts_sent_title:"Fatti inviati correttamente",
+      facts_sent_sub:"Ora può completare i suoi dati personali e decidere liberamente se inviarli."
+    },
+    fr:{
+      incident_title:"Déclaration",
+      personal_title:"Données personnelles",
+      personal_phase_title:"Envoi volontaire des données personnelles",
+      personal_phase_intro:"Ces données ne sont pas stockées dans Firebase. Elles sont seulement préparées sur votre appareil afin que vous puissiez les partager par le moyen de votre choix.",
+      report_code_label:"Code de référence de la déclaration",
+      copy_personal:"Copier les données",
+      share_device:"Partager",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Données personnelles prêtes à être partagées.",
+      share_copied:"Données personnelles copiées.",
+      share_unavailable:"Cet appareil ne permet pas le partage direct.",
+      share_error:"L'envoi n'a pas pu être effectué.",
+      missing_token:"Token manquant dans l'URL.",
+      facts_sent_title:"Faits envoyés avec succès",
+      facts_sent_sub:"Vous pouvez maintenant compléter vos données personnelles et décider librement de les envoyer ou non."
+    },
+    ru:{
+      incident_title:"Заявление",
+      personal_title:"Личные данные",
+      personal_phase_title:"Добровольная отправка личных данных",
+      personal_phase_intro:"Эти данные не сохраняются в Firebase. Они подготавливаются только на вашем устройстве, чтобы вы могли отправить их удобным для вас способом.",
+      report_code_label:"Код обращения",
+      copy_personal:"Копировать данные",
+      share_device:"Поделиться",
+      share_whatsapp:"WhatsApp",
+      share_email:"Email",
+      share_ready:"Личные данные готовы к отправке.",
+      share_copied:"Личные данные скопированы.",
+      share_unavailable:"Это устройство не поддерживает прямую отправку.",
+      share_error:"Не удалось завершить отправку.",
+      missing_token:"В URL отсутствует token.",
+      facts_sent_title:"Факты успешно отправлены",
+      facts_sent_sub:"Теперь вы можете заполнить личные данные и решить, отправлять их или нет."
+    },
+    zh:{
+      incident_title:"报案事实",
+      personal_title:"个人资料",
+      personal_phase_title:"自愿发送个人资料",
+      personal_phase_intro:"这些资料不会保存到 Firebase，只会在您的设备上准备好，供您按自己选择的方式分享。",
+      report_code_label:"报案参考编号",
+      copy_personal:"复制资料",
+      share_device:"分享",
+      share_whatsapp:"WhatsApp",
+      share_email:"电子邮件",
+      share_ready:"个人资料已准备好分享。",
+      share_copied:"个人资料已复制。",
+      share_unavailable:"此设备无法直接分享。",
+      share_error:"无法完成发送操作。",
+      missing_token:"URL 中缺少 token。",
+      facts_sent_title:"事实已成功提交",
+      facts_sent_sub:"现在您可以填写个人资料，并自行决定是否发送。"
+    },
+    ja:{
+      incident_title:"申告内容",
+      personal_title:"個人情報",
+      personal_phase_title:"個人情報の任意送信",
+      personal_phase_intro:"これらの情報は Firebase には保存されません。送信したい方法で共有できるよう、お使いの端末上でのみ準備されます。",
+      report_code_label:"申告参照コード",
+      copy_personal:"情報をコピー",
+      share_device:"共有",
+      share_whatsapp:"WhatsApp",
+      share_email:"メール",
+      share_ready:"個人情報を共有できる状態になりました。",
+      share_copied:"個人情報をコピーしました。",
+      share_unavailable:"この端末では直接共有できません。",
+      share_error:"送信を完了できませんでした。",
+      missing_token:"URL に token がありません。",
+      facts_sent_title:"事実関係を正常に送信しました",
+      facts_sent_sub:"個人情報を入力し、送信するかどうかを自由に選べます。"
+    }
+  };
+  return (m[lang] && m[lang][key]) || m.en[key] || key;
+}
+
+
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
+
+// === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
+const UI_ES_OVERRIDES = {
+  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO/PÉRDIDA",
+  "SUSTRACCIÓN": "🕵️ ROBO / HURTO",
+  "DAÑOS": "🧱 DAÑOS",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ ESTAFA / ESTAFA INFORMÁTICA",
+  "AGRESIÓN": "👊 AGRESIÓN",
+  "AMENAZAS": "🗣️ AMENAZAS",
+  "OTRO TIPO DE HECHO": "➡️ OTRO TIPO DE HECHO",
+  "ALLANAMIENTO / USURPACIÓN": "🏠 ALLANAMIENTO / USURPACIÓN",
+  "APROPIACIÓN INDEBIDA": "📦 APROPIACIÓN INDEBIDA",
+  "COACCIONES": "🧷 COACCIONES",
+  "CARÁCTER SEXUAL": "🔒 CARÁCTER SEXUAL",
+  "DENUNCIA GENÉRICA": "🧩 DENUNCIA GENÉRICA"
+};
+
+// --- COMPAPOL: filiación cifrada (password fijo) ---
+const __FILIACION_PASS = "adejegtd";
+
+function buildLabelPublicoFromFiliacion(f){
+  const nombre = ((f && f["Nombre"]) ? String(f["Nombre"]) : "").trim();
+  const ap = ((f && f["Apellidos"]) ? String(f["Apellidos"]) : "").trim();
+  const ap1 = (ap.split(/\s+/).filter(Boolean)[0] || "");
+  if (nombre && ap1) return `${nombre} ${ap1[0].toUpperCase()}.`;
+  return (nombre || ap1 || "(Sin nombre)");
+}
+
+function encryptFiliacionForCompapol(f){
+  if (!window.CryptoJS || !CryptoJS.AES) throw new Error("Falta CryptoJS (AES). No se puede cifrar.");
+  const plain = JSON.stringify(f || {});
+  const data = CryptoJS.AES.encrypt(plain, __FILIACION_PASS).toString();
+  return { meta_encrypted: true, data };
+}
 
 function applyTipoDocVisibility(){
   const sel = $("fTipoDoc");
@@ -661,26 +878,6 @@ function normUp(s){
     .toUpperCase().replace(/\s+/g," ").trim();
 }
 
-function trUI(s){
-  const k = String(s||"");
-  if (UI_EN[k]) return UI_EN[k];                    // textos UI
-  const ku = normUp(k);
-  if (__UI_BY_NORM[ku]) return __UI_BY_NORM[ku];    // fallback por normalización
-  return (window.COUNTRIES_EN && window.COUNTRIES_EN[ku]) ? window.COUNTRIES_EN[ku] : k; // países
-}
-
-const __UI_BY_NORM = (()=>{
-  const out = {};
-  for (const k of Object.keys(UI_EN || {})){
-    const nk = normUp(k);
-    if (!nk || out[nk]) continue;
-    out[nk] = UI_EN[k];
-  }
-  return out;
-})();
-
-
-
 function getAllPaises(){
   const out = [];
   const P = (window.PAISES || null);
@@ -696,31 +893,6 @@ function getAllPaises(){
 }
 const __PAISES_ALL = getAllPaises();
 const __PAISES_SET = new Set(__PAISES_ALL);
-const __COUNTRY_EN_TO_ES = (()=>{
-  const out = {};
-  const m = (window.COUNTRIES_EN && typeof window.COUNTRIES_EN === "object") ? window.COUNTRIES_EN : {};
-  for (const k of Object.keys(m)){
-    const es = normUp(k);
-    const en = normUp(m[k]);
-    if (!es || !en) continue;
-    out[en] = es;
-  }
-  return out;
-})();
-
-function canonicalCountry(raw){
-  const n = normUp(raw);
-  if (!n) return "";
-  if (__PAISES_SET.has(n)) return n;         // valor interno (es)
-  if (__COUNTRY_EN_TO_ES[n]) return __COUNTRY_EN_TO_ES[n]; // UI en
-  return "";
-}
-
-function displayCountry(raw){
-  const c = canonicalCountry(raw);
-  if (!c) return (raw||"").toString().trim();
-  return trUI(c);
-}
 
 function renderPillsFor(inputEl, hostEl, onPick){
   if (!inputEl || !hostEl) return;
@@ -729,20 +901,18 @@ function renderPillsFor(inputEl, hostEl, onPick){
     hostEl.innerHTML = "";
     if (!q) return; // SIN píldoras rápidas: solo al escribir
 
-    const list = __PAISES_ALL
-      .filter(p => p.includes(q) || normUp(trUI(p)).includes(q))
-      .slice(0, 18);
+    const list = __PAISES_ALL.filter(p=>p.includes(q)).slice(0, 18);
 
     for (const opt of list){
       if (opt === "DESCONOCIDO") continue;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "choiceBtn";
-      b.textContent = trUI(opt);
+      b.textContent = opt;
       b.dataset.value = opt;
-      b.classList.toggle("isPicked", canonicalCountry(inputEl.value) === opt);
+      b.classList.toggle("isPicked", normUp(inputEl.value) === opt);
       b.addEventListener("click", ()=>{
-        inputEl.value = trUI(opt);
+        inputEl.value = opt;
         if (onPick) onPick(opt);
         paint();
       });
@@ -751,8 +921,8 @@ function renderPillsFor(inputEl, hostEl, onPick){
   };
   inputEl.addEventListener("input", paint);
   inputEl.addEventListener("blur", ()=>{
-    const c = canonicalCountry(inputEl.value);
-    if (c) inputEl.value = trUI(c);
+    const v = normUp(inputEl.value);
+    if (v && __PAISES_SET.has(v)) inputEl.value = v;
   });
   paint();
 }
@@ -785,7 +955,7 @@ function fillMunicipios(prov, sel){
 }
 
 function computeLugarNacimiento(){
-  const pais = canonicalCountry($("fNacPais")?.value);
+  const pais = normUp($("fNacPais")?.value);
   const hid = $("fNacLugar");
   const outProv = $("fNacProvOut");
   const outMun = $("fNacMunOut");
@@ -816,7 +986,7 @@ function computeLugarNacimiento(){
 }
 
 function toggleNacEsUI(){
-  const pais = canonicalCountry($("fNacPais")?.value);
+  const pais = normUp($("fNacPais")?.value);
   const box = $("nacEsBox");
   if (!box) return;
   const isEs = (pais === "ESPAÑA");
@@ -871,7 +1041,7 @@ function toggleResidenciaTenerife(){
 }
 
 function computeDomicilio(){
-  const pais = canonicalCountry($("fDomPais")?.value);
+  const pais = normUp($("fDomPais")?.value);
   const dir  = ($("fDomDir")?.value||"").trim();
 
   if (!pais){
@@ -895,7 +1065,7 @@ function computeDomicilio(){
 }
 
 function toggleDomEsUI(){
-  const pais = canonicalCountry($("fDomPais")?.value);
+  const pais = normUp($("fDomPais")?.value);
   const box = $("domEsBox");
   if (!box) return;
   const isEs = (pais === "ESPAÑA");
@@ -907,6 +1077,8 @@ function toggleDomEsUI(){
   }
 }
 // =============================
+
+
 
 // =============================
 // Router GLOBAL (GLOBAL_ROUTES + QUESTION_SETS)
@@ -1040,7 +1212,7 @@ const AUTOR_EDAD_OPTIONS = ["<20","20-25","25-30","30-40","40-50","50-60",">60"]
 const AUTOR_CONSTITUCION_OPTIONS = ["DELGADA","NORMAL","FUERTE/CORPULENTA","ATLÉTICA","NO DETERMINADA"];
 const AUTOR_ALTURA_OPTIONS = ["<160","160-170","170-180","180-190",">190","NO DETERMINADA"];
 const wiz = {
-  idx: 0,                 // 0 = filiación (pantalla fija)
+  idx: 1,
   steps: [],              // [{q, el, inputEl?}]
   st: {                   // respuestas
     // GLOBAL
@@ -1074,16 +1246,17 @@ const wiz = {
 };
 
 function storageKey(){ return "pred_GLOBAL_"+token; }
-const AUTOSAVE_INTERVAL_MS = 1 * 60 * 1000;
+const AUTOSAVE_INTERVAL_MS = 2 * 60 * 1000;
 let draftSyncStarted = false;
 let draftSyncFinalized = false;
 let lastDraftFingerprint = "";
+let reportCode = "";
+let flowPhase = "hechos";
 
 function computeDraftFingerprint(payload){
   try{
     return JSON.stringify({
       tipo: currentTipoFinal(),
-      filiacion: (payload && payload.filiacion) || {},
       hechos: (payload && payload.hechos) || {}
     });
   }catch(_){
@@ -1091,9 +1264,48 @@ function computeDraftFingerprint(payload){
   }
 }
 
+function isIncidentPhase(){
+  return flowPhase === "hechos";
+}
+
+function randomFiveDigitCode(){
+  return String(10000 + Math.floor(Math.random() * 90000));
+}
+
+async function ensureReportCode(){
+  if (reportCode) return reportCode;
+  if (!token) throw new Error(uiText("missing_token"));
+
+  const sessionRef = doc(db, "tokenSessions", token);
+  try{
+    const sessionSnap = await getDoc(sessionRef);
+    if (sessionSnap.exists()){
+      const existing = String(sessionSnap.data().reportCode || "").trim();
+      if (existing){
+        reportCode = existing;
+        return reportCode;
+      }
+    }
+  }catch(_){ }
+
+  for (let i = 0; i < 30; i++){
+    const candidate = randomFiveDigitCode();
+    try{
+      const predSnap = await getDoc(doc(db, "predenuncias", candidate));
+      if (predSnap.exists()) continue;
+    }catch(_){ }
+    reportCode = candidate;
+    await setDoc(sessionRef, {
+      reportCode,
+      lastSeenAt: serverTimestamp()
+    }, { merge: true });
+    return reportCode;
+  }
+
+  throw new Error("No se pudo reservar un código de 5 dígitos.");
+}
+
 function readFiliacion(){
-  const nacCanonical = canonicalCountry($("fNac").value||"");
-  const nacPaisCanonical = canonicalCountry($("fNacPais").value||"");
   return {
   "Nombre": ($("fNombre").value||"").trim(),
 "Apellidos": ($("fApellidos").value||"").trim().toUpperCase(),
@@ -1101,10 +1313,10 @@ function readFiliacion(){
   "Otro documento": ($("fTipoDoc").value||"").trim() === "Otro documento de Identidad" ? ($("fOtroDoc").value||"").trim() : "",
   "Nº Documento": ($("fNumDoc").value||"").trim(),
   "Sexo": ($("fSexo").value||"").trim(),
-  "Nacionalidad": nacCanonical || ($("fNac").value||"").trim(),
+  "Nacionalidad": ($("fNac").value||"").trim(),
   "Nombre de los Padres": ($("fPadres").value||"").trim(),
   "Fecha de nacimiento": ($("fNacFecha").value||"").trim(),
-  "País nacimiento": nacPaisCanonical || ($("fNacPais").value||"").trim(),
+  "País nacimiento": ($("fNacPais").value||"").trim(),
   "Lugar de nacimiento": ($("fNacLugar").value||"").trim(),
   "Provincia nacimiento": ($("fNacProvOut").value||"").trim(),
   "Municipio nacimiento": ($("fNacMunOut").value||"").trim(),
@@ -1170,6 +1382,8 @@ function buildHechosAskedOnly(){
     out[k] = s;
   }
 
+  // En LESIONES y AGRESIÓN (familiar/afectivo) no se pregunta "conocimiento_hecho".
+  // Si viene arrastrado por carga previa, NO lo exportes.
 if ($("fResideTfeNo")?.checked){
   const est = ($("fEstanciaEventual")?.value||"").trim();
   const fv = ($("fFechaVuelta")?.value||"").trim();
@@ -1181,13 +1395,21 @@ if ($("fResideTfeNo")?.checked){
     const tipoFinal = currentTipoFinal();
     if (tipoFinal === "LESIONES" || tipoFinal === "AGRESION_FAMILIAR_AFECTIVO"){
       delete out.conocimiento_hecho;
-      delete out.hecho_conocimiento;
+      delete out.hecho_conocimiento; // por si algún flujo lo metió ya renombrado
     }
   }catch(_){ }
 
   return out;
 }
-function buildPayload(){
+function buildHechosPayload(){
+  return {
+    meta: { tipo_delictivo: currentTipoFinal(), token, reportCode, version: 3, createdAt: new Date().toISOString() },
+    reportCode,
+    hechos: exportForChatGPT(buildHechosAskedOnly())
+  };
+}
+
+function buildLocalPayload(){
   const filiacion = readFiliacion();
   if ($("fResideTfeNo")?.checked){
     const est = ($("fEstanciaEventual")?.value||"").trim();
@@ -1195,37 +1417,14 @@ function buildPayload(){
     if (est) filiacion["estancia_eventual"] = est;
     if (fv) filiacion["fecha_vuelta"] = fv;
   }
-  const tipoFinal = currentTipoFinal();
-  let conocimiento_hecho = (wiz.st.conocimiento_hecho||"").trim();
-  // En AGRESIÓN, el conocimiento es siempre TESTIGO DIRECTO (no se pregunta).
-  if (tipoFinal === "LESIONES" || tipoFinal === "AGRESION_FAMILIAR_AFECTIVO"){
-    conocimiento_hecho = "TESTIGO DIRECTO";
-  }
-  const lesiones = (wiz.st.lesiones||"NO");
-  const cam = (wiz.st.camaras||"NO");
+  const hechosPayload = buildHechosPayload();
   return {
-    meta: { tipo_delictivo: currentTipoFinal(), token, version: 2, createdAt: new Date().toISOString() },
+    meta: hechosPayload.meta,
+    reportCode,
+    phase: flowPhase,
     filiacion,
-    hechos: exportForChatGPT(buildHechosAskedOnly())
+    hechos: hechosPayload.hechos
   };
-}
-
-function buildLabelPublicoFromFiliacion(f){
-  const nombre = ((f && f["Nombre"]) ? String(f["Nombre"]) : "").trim();
-  const ap = ((f && f["Apellidos"]) ? String(f["Apellidos"]) : "").trim();
-  const ap1 = (ap.split(/\s+/).filter(Boolean)[0] || "");
-  if (nombre && ap1) return `${nombre} ${ap1[0].toUpperCase()}.`;
-  return (nombre || ap1 || "(Sin nombre)");
-}
-
-// *** IMPORTANTE: fija y solo para COMPA-POL (mismo que en global_esp.html)
-const __FILIACION_PASS = "adejegtd";
-
-function encryptFiliacionForCompapol(f){
-  if (!window.CryptoJS || !CryptoJS.AES) throw new Error("Falta CryptoJS (AES). No se puede cifrar.");
-  const plain = JSON.stringify(f || {});
-  const data = CryptoJS.AES.encrypt(plain, __FILIACION_PASS).toString();
-  return { meta_encrypted: true, data };
 }
 function exportForChatGPT(state, map = EXPORT_KEY_MAP){
   const has = (o,k)=> Object.prototype.hasOwnProperty.call(o,k);
@@ -1309,7 +1508,7 @@ function makeStepEl(q){
 
   const title = document.createElement("div");
   title.className = "stepTitle";
-  title.textContent = trUI(q.title);
+  title.textContent = q.title;
   wrap.appendChild(title);
 
   let inputEl = null;
@@ -1330,7 +1529,8 @@ function makeStepEl(q){
       const b = document.createElement("button");
       b.type = "button";
       b.className = "choiceBtn";
-      b.textContent = trUI(opt);
+      const uiLabel = (UI_ES_OVERRIDES && UI_ES_OVERRIDES[opt]) ? UI_ES_OVERRIDES[opt] : opt;
+      b.textContent = uiLabel;
       b.dataset.value = opt;
       b.classList.toggle("isPicked", opt === wiz.st[q.key]);
       b.addEventListener("click", ()=>{
@@ -1359,7 +1559,7 @@ function makeStepEl(q){
 
     const w1 = document.createElement("div");
     const l1 = document.createElement("label");
-    l1.textContent = "Date";
+    l1.textContent = "Fecha";
     const i1 = document.createElement("input");
     i1.type = "date";
     i1.id = "q_fecha";
@@ -1376,7 +1576,7 @@ function makeStepEl(q){
       // Dos campos independientes (DESDE / HASTA) para que siempre se vean.
       w2 = document.createElement("div");
       const l2a = document.createElement("label");
-      l2a.textContent = "Heure (de)";
+      l2a.textContent = "Hora (desde)";
       const i2a = document.createElement("input");
       i2a.type = "time";
       i2a.id = "q_hora_desde";
@@ -1390,7 +1590,7 @@ function makeStepEl(q){
 
       w2b = document.createElement("div");
       const l2b = document.createElement("label");
-      l2b.textContent = "Heure (à)";
+      l2b.textContent = "Hora (hasta)";
       const i2b = document.createElement("input");
       i2b.type = "time";
       i2b.id = "q_hora_hasta";
@@ -1405,7 +1605,7 @@ function makeStepEl(q){
     } else {
       w2 = document.createElement("div");
       const l2 = document.createElement("label");
-      l2.textContent = "Heure";
+      l2.textContent = "Hora";
       const i2 = document.createElement("input");
       i2.type = "time";
       i2.id = "q_hora";
@@ -1420,7 +1620,7 @@ function makeStepEl(q){
 
       w2b = document.createElement("div");
       const l2b = document.createElement("label");
-      l2b.textContent = "Heure (jusqu'à, si cela s'est produit sur une période)";
+      l2b.textContent = "Hora (hasta, si ocurre en un periodo de tiempo)";
       const i2b = document.createElement("input");
       i2b.type = "time";
       i2b.id = "q_hora_hasta_opt";
@@ -1436,11 +1636,11 @@ function makeStepEl(q){
     const w3 = document.createElement("div");
     w3.style.gridColumn = "1/-1";
     const l3 = document.createElement("label");
-    l3.textContent = "Lieu";
+    l3.textContent = "Lugar";
     const i3 = document.createElement("input");
     i3.type = "text";
     i3.id = "q_lugar";
-    i3.placeholder = trUI(q.placeholderLugar || "");
+    i3.placeholder = q.placeholderLugar || "";
     i3.value = wiz.st.lugar || "";
     i3.addEventListener("input", ()=>{ wiz.st.lugar = i3.value; });
 
@@ -1525,7 +1725,7 @@ function makeStepEl(q){
     const inp = document.createElement("input");
     inp.type = "text";
     inp.id = "q_"+q.key;
-    inp.placeholder = trUI(q.placeholder || "");
+    inp.placeholder = q.placeholder || "";
     inp.value = wiz.st[q.key] || "";
     inp.addEventListener("input", ()=>{ wiz.st[q.key] = inp.value; });
     wrap.appendChild(inp);
@@ -1535,7 +1735,7 @@ function makeStepEl(q){
   if (q.type === "textarea"){
     const ta = document.createElement("textarea");
     ta.id = "q_"+q.key;
-    ta.placeholder = trUI(q.placeholder || "");
+    ta.placeholder = q.placeholder || "";
     if (q.max) ta.maxLength = q.max;
     ta.value = wiz.st[q.key] || "";
     if (q.key === "resumen") ta.style.minHeight = "260px";
@@ -1553,7 +1753,7 @@ function makeStepEl(q){
     b.className = "btn secondary";
     b.type = "button";
     b.id = "q_objBtn";
-    b.textContent = trUI("AÑADIR / EDITAR OBJETOS");
+    b.textContent = "AÑADIR / EDITAR OBJETOS";
     b.addEventListener("click", ()=> openObjs(!!q.noValue));
 
     const c = document.createElement("div");
@@ -1573,7 +1773,7 @@ function makeStepEl(q){
     const b = document.createElement("button");
     b.className = "btn secondary";
     b.type = "button";
-    b.textContent = "AJOUTER / ÉDITER AUTEURS";
+    b.textContent = "AÑADIR / EDITAR AUTORES";
     b.addEventListener("click", ()=> openAuthors(q.key));
     const c = document.createElement("div");
     c.className = "muted";
@@ -1609,14 +1809,14 @@ function makeStepEl(q){
       if (it.fullRow) w.style.gridColumn = "1/-1";
 
       const l = document.createElement("label");
-      l.textContent = trUI(it.title || "");
+      l.textContent = it.title || "";
       w.appendChild(l);
 
       if (it.type === "select"){
         const sel = document.createElement("select");
         const options = Array.isArray(it.options) ? it.options : [];
         if (!wiz.st[it.key] && options[0]) wiz.st[it.key] = options[0];
-        sel.innerHTML = options.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
+        sel.innerHTML = options.map(v=>`<option value="${v}">${v}</option>`).join("");
         sel.value = wiz.st[it.key] || "";
         sel.addEventListener("change", ()=>{
           wiz.st[it.key] = sel.value;
@@ -1627,7 +1827,7 @@ function makeStepEl(q){
         if (!inputEl) inputEl = sel;
       } else if (it.type === "textarea"){
         const ta = document.createElement("textarea");
-        ta.placeholder = trUI(it.placeholder || "");
+        ta.placeholder = it.placeholder || "";
         if (it.max) ta.maxLength = it.max;
         ta.value = wiz.st[it.key] || "";
         ta.addEventListener("input", ()=>{ wiz.st[it.key] = ta.value; refreshItemVisibility(); });
@@ -1643,7 +1843,7 @@ function makeStepEl(q){
       } else {
         const inp = document.createElement("input");
         inp.type = "text";
-        inp.placeholder = trUI(it.placeholder || "");
+        inp.placeholder = it.placeholder || "";
         inp.value = wiz.st[it.key] || "";
         inp.addEventListener("input", ()=>{ wiz.st[it.key] = inp.value; refreshItemVisibility(); });
         w.appendChild(inp);
@@ -1678,19 +1878,18 @@ function renderWizard(){
   // Si el flujo cambia (GLOBAL_ROUTES), asegúrate de que el índice actual sigue siendo válido y visible.
   const last = lastRealStep();
   if (wiz.idx > last) wiz.idx = last;
-  if (wiz.idx < 0) wiz.idx = 0;
+  if (wiz.idx < 1) wiz.idx = 1;
   if (!isRealStepVisible(wiz.idx)){
     const n = nextVisibleReal(wiz.idx);
     const p = prevVisibleReal(wiz.idx);
-    wiz.idx = (n !== null) ? n : (p !== null) ? p : 0;
+    wiz.idx = (n !== null) ? n : (p !== null) ? p : 1;
   }
 
   updateStepUI(false);
 }
 
 function totalVisibleSteps(){
-  // paso 0 (filiación) + visibles de preguntas
-  let n = 1;
+  let n = 0;
   for (const s of wiz.steps){
     if (shouldShowQuestion(s.q)) n++;
   }
@@ -1698,8 +1897,7 @@ function totalVisibleSteps(){
 }
 
 function visibleStepIndices(){
-  // índices lógicos: 0=filiación, 1..N preguntas visibles en orden
-  const out = [0];
+  const out = [];
   let k = 1;
   for (const s of wiz.steps){
     if (shouldShowQuestion(s.q)) out.push(k);
@@ -1709,17 +1907,13 @@ function visibleStepIndices(){
 }
 
 function logicalToRealIndex(logicalIdx){
-  // logicalIdx: 0=filiación; 1.. = orden de preguntas (incluye ocultas)
-  // Aquí usamos wiz.idx como índice REAL: 0=filiación, 1..=posición en wiz.steps
-  // Mantendremos wiz.idx como REAL.
   return logicalIdx;
 }
 
-function firstRealStep(){ return 0; }
+function firstRealStep(){ return 1; }
 function lastRealStep(){ return wiz.steps.length; }
 
 function isRealStepVisible(realIdx){
-  if (realIdx === 0) return true;
   const s = wiz.steps[realIdx-1];
   if (!s) return false;
   return shouldShowQuestion(s.q);
@@ -1741,70 +1935,64 @@ function prevVisibleReal(from){
 
 function updateProgress(){
   const total = totalVisibleSteps();
-  // posición visible actual
-  let pos = 1;
-  if (wiz.idx === 0){
-    pos = 1;
-  } else {
-    // cuenta visibles hasta wiz.idx
-    pos = 1;
-    for (let i = 1; i <= wiz.idx; i++){
-      if (isRealStepVisible(i)) pos++;
-    }
+  let pos = 0;
+  for (let i = 1; i <= wiz.idx; i++){
+    if (isRealStepVisible(i)) pos++;
   }
   const p = $("wizProgress");
-  if (p) p.textContent = `Étape ${pos} sur ${total}`;
+  if (p) p.textContent = total ? `Paso ${Math.min(Math.max(pos, 1), total)} de ${total}` : "";
 }
 
 function updateStepUI(focus){
-  // Mostrar/ocultar la sección de filiación fuera del wizard
   const bf = document.getElementById("boxFiliacion");
-  if (bf) bf.classList.toggle("isHidden", wiz.idx !== 0);
+  const wizard = document.getElementById("wizard");
+  const personal = document.getElementById("personalActions");
+  const hr = document.querySelector(".hrAfterFiliacion");
+  const showPersonal = !isIncidentPhase();
+  if (bf) bf.classList.toggle("isHidden", !showPersonal);
+  if (wizard) wizard.classList.toggle("hidden", showPersonal);
+  if (personal) personal.classList.toggle("hidden", !showPersonal);
+  if (hr) hr.classList.toggle("hidden", !showPersonal);
   const isMobile = window.matchMedia("(max-width:720px)").matches;
-  const lockScroll = (wiz.idx !== 0) && isMobile;
+  const lockScroll = isIncidentPhase() && isMobile;
   document.body.classList.toggle("noScroll", lockScroll);
 
-  // Título superior (donde estaba "Predenuncia")
   const pt = document.getElementById("pageTitle");
   if (pt){
-    if (wiz.idx === 0){
-      pt.textContent = "Données d'identification";
+    if (showPersonal){
+      pt.textContent = uiText("personal_title");
     } else {
       const s = wiz.steps[wiz.idx-1];
-      pt.textContent = (s && s.q && s.q.title) ? trUI(String(s.q.title)) : "";
+      pt.textContent = (s && s.q && s.q.title) ? String(s.q.title) : uiText("incident_title");
     }
   }
 
-  // Pasos dinámicos
   for (let i=0;i<wiz.steps.length;i++){
     const realIdx = i+1;
-    const isActive = (wiz.idx === realIdx);
+    const isActive = isIncidentPhase() && (wiz.idx === realIdx);
     wiz.steps[i].el.classList.toggle("isActive", isActive);
   }
 
-  // Botones
   const prev = $("btnPrev");
   const next = $("btnNext");
   const fin = $("btnFinish");
-
-  const hasPrev = prevVisibleReal(wiz.idx) !== null;
-  prev.disabled = !hasPrev;
-
-  // En la pantalla de filiación (idx 0) SIEMPRE mostramos SIGUIENTE y ocultamos FINALIZAR.
-  // Evita que un fallo de cálculo de visibilidad deje al usuario con FINALIZAR desde el inicio.
-  if (wiz.idx === 0){
-    next.style.display = "inline-block";
-    fin.style.display = "none";
-  } else {
-    const hasNext = nextVisibleReal(wiz.idx) !== null;
-    next.style.display = hasNext ? "inline-block" : "none";
-    fin.style.display = hasNext ? "none" : "inline-block";
+  if (prev && next && fin){
+    const hasPrev = isIncidentPhase() && prevVisibleReal(wiz.idx) !== null;
+    prev.disabled = !hasPrev;
+    if (showPersonal){
+      prev.style.display = "none";
+      next.style.display = "none";
+      fin.style.display = "none";
+    } else {
+      prev.style.display = "inline-block";
+      const hasNext = nextVisibleReal(wiz.idx) !== null;
+      next.style.display = hasNext ? "inline-block" : "none";
+      fin.style.display = hasNext ? "none" : "inline-block";
+    }
   }
 
   updateProgress();
-
-  // SIN AUTOFOCUS
-// El teclado, calendario o reloj solo se abre si el usuario toca el campo
+  refreshPersonalPhaseUI();
 }
 
 function isGtdBypass(){
@@ -1816,67 +2004,6 @@ function isGtdBypass(){
 function validateCurrentStep(){
   if (isGtdBypass()) return true;
   setStatus("");
-
-  if (wiz.idx === 0){
-    const nombre = ($("fNombre")?.value||"").trim();
-    const apellidos = ($("fApellidos")?.value||"").trim();
-    const tipoDoc = ($("fTipoDoc")?.value||"").trim();
-    const otroDoc = ($("fOtroDoc")?.value||"").trim();
-    const numDoc = ($("fNumDoc")?.value||"").trim();
-    const sexo = ($("fSexo")?.value||"").trim();
-    const fechaNac = ($("fNacFecha")?.value||"").trim();
-    const dir = ($("fDomDir")?.value||"").trim();
-
-    const isIndoc = /INDOCUMENTAD/.test(normUp(tipoDoc));
-
-    if (!nombre || !apellidos || !tipoDoc || !sexo || !fechaNac || !dir){
-      return failValidation("Completa los campos obligatorios para continuar.");
-    }
-
-    if (tipoDoc === "Otro documento de Identidad" && !otroDoc){
-      return failValidation("Indica cuál es el otro documento de identidad.");
-    }
-
-    if (!isIndoc && !numDoc){
-      return failValidation("El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.");
-    }
-
-    if (tipoDoc === "DNI" && /^[A-Za-z]/.test(numDoc)){
-      return failValidation("Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.");
-    }
-
-    const canonCountry = (v)=> (typeof canonicalCountry === "function") ? canonicalCountry(v) : normUp(v);
-
-    const nat = canonCountry($("fNac")?.value);
-    if (!nat || !__PAISES_SET.has(nat)) return failValidation("Selecciona una NACIONALIDAD válida (usa las píldoras).");
-
-    const paisNac = canonCountry($("fNacPais")?.value);
-    if (!paisNac || !__PAISES_SET.has(paisNac)) return failValidation("Selecciona un PAÍS de nacimiento válido (usa las píldoras).");
-
-    if (paisNac === "ESPAÑA") {
-      const prov = ($("fNacProv")?.value||"").trim();
-      const mun = ($("fNacMun")?.value||"").trim();
-      if (!prov || !mun) return failValidation("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
-    }
-
-    const paisDom = canonCountry($("fDomPais")?.value);
-    if (!paisDom || !__PAISES_SET.has(paisDom)) return failValidation("Selecciona un país de DOMICILIO válido (usa las píldoras).");
-
-    if (paisDom === "ESPAÑA") {
-      const provD = ($("fDomProv")?.value||"").trim();
-      const munD = ($("fDomMun")?.value||"").trim();
-      if (!provD || !munD) return failValidation("Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
-    }
-
-    if ($("fResideTfeNo")?.checked){
-      const est = ($("fEstanciaEventual")?.value||"").trim();
-      const fv = ($("fFechaVuelta")?.value||"").trim();
-      if (!est || !fv) return failValidation("Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.");
-    }
-
-    return true;
-  }
-
   const s = wiz.steps[wiz.idx-1];
   if (!s) return true;
   return true;
@@ -1896,11 +2023,7 @@ $("btnNext").addEventListener("click", async ()=>{
   const bypass = isGtdBypass();
   if (!bypass && !validateCurrentStep()) return;
   let n = nextVisibleReal(wiz.idx);
-  if (n === null && wiz.idx === 0){
-    n = nextVisibleReal(0);
-    if (n === null && wiz.steps.length) n = 1;
-  }
-  if (wiz.idx === 0 && n !== null){
+  if (!draftSyncStarted){
     try{ await saveInitialPredenuncia(); }catch(err){ console.warn("saveInitialPredenuncia", err); }
   }
   if (n !== null) goTo(n);
@@ -1909,6 +2032,22 @@ $("btnNext").addEventListener("click", async ()=>{
 $("btnFinish").addEventListener("click", async ()=>{
   await saveFinal();
 });
+$("btnCopyPersonal")?.addEventListener("click", ()=>{ void sharePersonalData("copy"); });
+$("btnShareDevice")?.addEventListener("click", ()=>{ void sharePersonalData("device"); });
+$("btnShareWhatsapp")?.addEventListener("click", ()=>{ void sharePersonalData("whatsapp"); });
+$("btnShareEmail")?.addEventListener("click", ()=>{ void sharePersonalData("email"); });
+let draftStartTimer = null;
+function scheduleInitialDraftSave(){
+  if (!isIncidentPhase() || draftSyncStarted || draftSyncFinalized) return;
+  clearTimeout(draftStartTimer);
+  draftStartTimer = setTimeout(()=>{
+    if (!draftSyncStarted && isIncidentPhase()){
+      void saveInitialPredenuncia().catch(err => console.warn("saveInitialPredenuncia", err));
+    }
+  }, 600);
+}
+$("dynSteps")?.addEventListener("input", scheduleInitialDraftSave);
+$("dynSteps")?.addEventListener("change", scheduleInitialDraftSave);
 
 // =============================
 // Objetos modal (se mantiene)
@@ -1940,45 +2079,64 @@ function renderObjs(){
   if (!objetosState.length){
     const empty = document.createElement("div");
     empty.className = "muted";
-    empty.textContent = trUI("Sin objetos.");
+    empty.textContent = "Sin objetos.";
     list.appendChild(empty);
     return;
   }
 
   objetosState.forEach((o, idx)=>{
+    if (!o.tipo_catalogo){
+      const t = String(o.tipo || "").trim().toUpperCase();
+      if (OBJETO_TIPO_OPTIONS.includes(t)) o.tipo_catalogo = t;
+      else if (t) { o.tipo_catalogo = "OTRO"; o.descripcion = o.descripcion || o.tipo; }
+      else o.tipo_catalogo = "";
+    }
+    const row = document.createElement("div");
+    row.className = "objRow";
+    if (objetosNoValorMode) row.classList.add("noValue");
+
     const card = document.createElement("div");
     card.className = "objCard";
 
-    if (!o.tipo_catalogo) o.tipo_catalogo = o.tipo || OBJETO_TIPO_OPTIONS[0];
-
-    const top = document.createElement("div");
-    top.className = "objRow";
-    if (objetosNoValorMode) top.classList.add("noValue");
-
-    const tipoSel = document.createElement("select");
-    tipoSel.className = "objTipo";
-    tipoSel.innerHTML = OBJETO_TIPO_OPTIONS.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
-    if (!OBJETO_TIPO_OPTIONS.includes(o.tipo_catalogo)) o.tipo_catalogo = "OTRO";
-    tipoSel.value = o.tipo_catalogo;
-    tipoSel.addEventListener("change", ()=>{
-      o.tipo_catalogo = tipoSel.value;
-      o.tipo = tipoSel.value;
+    const tipoI = document.createElement("select");
+    tipoI.className = "objTipo";
+    tipoI.innerHTML = `<option value=""></option>${OBJETO_TIPO_OPTIONS.map(v=>`<option value="${v}">${v}</option>`).join("")}`;
+    tipoI.value = o.tipo_catalogo || "";
+    tipoI.addEventListener("change", ()=>{
+      o.tipo_catalogo = tipoI.value;
+      if (o.tipo_catalogo !== "MÓVIL") o.marca_modelo = "";
+      syncObjectTipo(o);
       renderObjs();
     });
 
     const cantI = document.createElement("input");
     cantI.className = "objCant";
-    cantI.placeholder = "Qté";
+    cantI.placeholder = "Cantidad";
     cantI.inputMode = "numeric";
     cantI.value = o.cantidad || "";
     cantI.addEventListener("input", ()=>{ o.cantidad = cantI.value; });
 
     const valI = document.createElement("input");
     valI.className = "objVal";
-    valI.placeholder = "Valeur (€)";
+    valI.placeholder = "Valor total (€)";
     valI.inputMode = "numeric";
     valI.value = o.valor_total_eur || "";
     valI.addEventListener("input", ()=>{ o.valor_total_eur = valI.value; });
+    const descI = document.createElement("input");
+    descI.style.gridColumn = "1/-1";
+    descI.placeholder = "Descripción del objeto";
+    descI.value = o.descripcion || "";
+    descI.addEventListener("input", ()=>{ o.descripcion = descI.value; syncObjectTipo(o); });
+    const serialI = document.createElement("input");
+    serialI.style.gridColumn = "1/-1";
+    serialI.placeholder = "Nº serie / IMEI (opcional)";
+    serialI.value = o.numero_serie_imei || "";
+    serialI.addEventListener("input", ()=>{ o.numero_serie_imei = serialI.value; });
+    const marcaI = document.createElement("input");
+    marcaI.style.gridColumn = "1/-1";
+    marcaI.placeholder = "Marca / modelo (si es móvil)";
+    marcaI.value = o.marca_modelo || "";
+    marcaI.addEventListener("input", ()=>{ o.marca_modelo = marcaI.value; syncObjectTipo(o); });
 
     const del = document.createElement("button");
     del.className = "btn danger objDel";
@@ -1990,76 +2148,57 @@ function renderObjs(){
       updateObjsCount();
     });
 
-    top.appendChild(tipoSel);
-    top.appendChild(cantI);
+    row.appendChild(tipoI);
+    row.appendChild(cantI);
     if (!objetosNoValorMode){
-      top.appendChild(valI);
+      row.appendChild(valI);
     } else {
       delete o.valor_total_eur;
     }
-    top.appendChild(del);
-    card.appendChild(top);
+    row.appendChild(del);
+    row.appendChild(descI);
+    if (o.tipo_catalogo === "MÓVIL") row.appendChild(marcaI);
+    row.appendChild(serialI);
 
-    const desc = document.createElement("input");
-    desc.style.marginTop = "8px";
-    desc.placeholder = "Description / détails";
-    desc.value = o.descripcion || "";
-    desc.addEventListener("input", ()=>{ o.descripcion = desc.value; o.tipo = o.tipo_catalogo || o.tipo; });
-    card.appendChild(desc);
-
-    const isMobile = ((o.tipo_catalogo || "").toUpperCase() === "MÓVIL");
-    if (isMobile){
-      const mm = document.createElement("input");
-      mm.style.marginTop = "8px";
-      mm.placeholder = "Marque / modèle";
-      mm.value = o.marca_modelo || "";
-      mm.addEventListener("input", ()=>{ o.marca_modelo = mm.value; });
-      card.appendChild(mm);
-    }
-
-    const serial = document.createElement("input");
-    serial.style.marginTop = "8px";
-    serial.placeholder = "Numéro de série / IMEI (optionnel)";
-    serial.value = o.numero_serie_imei || "";
-    serial.addEventListener("input", ()=>{ o.numero_serie_imei = serial.value; });
-    card.appendChild(serial);
-
+    card.appendChild(row);
     list.appendChild(card);
   });
+}
+function syncObjectTipo(o){
+  const tc = (o.tipo_catalogo || "").trim();
+  if (!tc){ o.tipo = ""; return; }
+  if (tc === "OTRO"){
+    o.tipo = (o.descripcion || "").trim() || "OTRO";
+    return;
+  }
+  o.tipo = tc;
 }
 
 $("btnCloseObjs").addEventListener("click", closeObjs);
 $("objsBack").addEventListener("click", (e)=>{ if (e.target === $("objsBack")) closeObjs(); });
 
 $("btnAddObj").addEventListener("click", ()=>{
-  objetosState.push(
-    objetosNoValorMode
-      ? { tipo_catalogo: "MÓVIL", tipo:"MÓVIL", cantidad:"", descripcion:"", marca_modelo:"", numero_serie_imei:"" }
-      : { tipo_catalogo: "MÓVIL", tipo:"MÓVIL", cantidad:"", valor_total_eur:"", descripcion:"", marca_modelo:"", numero_serie_imei:"" }
-  );
+  objetosState.push(objetosNoValorMode
+    ? { tipo_catalogo:"", tipo:"", cantidad:"", descripcion:"", numero_serie_imei:"", marca_modelo:"" }
+    : { tipo_catalogo:"", tipo:"", cantidad:"", valor_total_eur:"", descripcion:"", numero_serie_imei:"", marca_modelo:"" });
   renderObjs();
   updateObjsCount();
 });
 
 $("btnSaveObjs").addEventListener("click", ()=>{
   objetosState = objetosState
-    .map(o=>{
-      const x = { ...o };
-      const s = (x.numero_serie_imei || "").trim();
-      if (!s) delete x.numero_serie_imei;
-      return x;
-    })
-    .filter(o => (o.tipo||"").trim() || (o.cantidad||"").trim() || (o.valor_total_eur||"").trim() || (o.descripcion||"").trim());
+    .map(o => ({ ...o }))
+    .filter(o => {
+      syncObjectTipo(o);
+      return (o.tipo||"").trim() || (o.cantidad||"").trim() || (o.valor_total_eur||"").trim() || (o.descripcion||"").trim() || (o.numero_serie_imei||"").trim();
+    });
   updateObjsCount();
   closeObjs();
 });
 
-// =============================
-// Authors modal
-// =============================
 function openAuthors(key){
   currentAuthorsKey = key;
-  if (!autoresStateByKey[currentAuthorsKey]) autoresStateByKey[currentAuthorsKey] = [];
+  if (!Array.isArray(autoresStateByKey[key])) autoresStateByKey[key] = [];
   renderAuthors();
   const b = $("authorsBack");
   if (b) b.style.display = "flex";
@@ -2068,78 +2207,63 @@ function closeAuthors(){
   const b = $("authorsBack");
   if (b) b.style.display = "none";
 }
-function authorCard(author, idx){
-  const wrap = document.createElement("div");
-  wrap.className = "objCard";
-  const row1 = document.createElement("div");
-  row1.className = "grid";
-  const mkSel = (label, options, key)=>{
-    const w = document.createElement("div");
-    const l = document.createElement("label");
-    l.textContent = label;
-    const s = document.createElement("select");
-    s.innerHTML = options.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
-    s.value = author[key] || options[0];
-    s.addEventListener("change", ()=>{ author[key] = s.value; });
-    w.appendChild(l); w.appendChild(s);
-    return w;
-  };
-  row1.appendChild(mkSel("Sexe", AUTOR_SEXO_OPTIONS, "sexo"));
-  row1.appendChild(mkSel("Tranche d'âge", AUTOR_EDAD_OPTIONS, "edad_rango"));
-  row1.appendChild(mkSel("Constitution", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
-  row1.appendChild(mkSel("Tranche de taille", AUTOR_ALTURA_OPTIONS, "altura_rango"));
-  wrap.appendChild(row1);
-
-  const row2 = document.createElement("div");
-  row2.className = "grid";
-  row2.style.marginTop = "8px";
-  const mkText = (label, key, ph)=>{
-    const w = document.createElement("div");
-    const l = document.createElement("label");
-    l.textContent = label;
-    const i = document.createElement("input");
-    i.type = "text";
-    i.placeholder = ph || "";
-    i.value = author[key] || "";
-    i.addEventListener("input", ()=>{ author[key] = i.value; });
-    w.appendChild(l); w.appendChild(i);
-    return w;
-  };
-  row2.appendChild(mkText("Vêtements haut", "vestimenta_superior"));
-  row2.appendChild(mkText("Vêtements bas", "vestimenta_inferior"));
-  row2.appendChild(mkText("Langue/accent", "idioma_acento"));
-  row2.appendChild(mkText("Signe distinctif", "rasgo_distintivo"));
-  wrap.appendChild(row2);
-
-  const row3 = document.createElement("div");
-  row3.className = "row";
-  row3.style.justifyContent = "flex-end";
-  row3.style.marginTop = "8px";
-  const del = document.createElement("button");
-  del.className = "btn danger";
-  del.type = "button";
-  del.textContent = "X";
-  del.addEventListener("click", ()=>{
-    autoresStateByKey[currentAuthorsKey].splice(idx,1);
-    renderAuthors();
-  });
-  row3.appendChild(del);
-  wrap.appendChild(row3);
-  return wrap;
-}
 function renderAuthors(){
   const list = $("authorsList");
   if (!list) return;
-  list.innerHTML = "";
   const arr = autoresStateByKey[currentAuthorsKey] || [];
+  list.innerHTML = "";
   if (!arr.length){
     const empty = document.createElement("div");
     empty.className = "muted";
-    empty.textContent = "No authors.";
+    empty.textContent = "Sin autores.";
     list.appendChild(empty);
     return;
   }
-  arr.forEach((a,idx)=> list.appendChild(authorCard(a,idx)));
+  arr.forEach((a, idx)=>{
+    const card = document.createElement("div");
+    card.className = "objCard";
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    const mkSel = (labelTxt, opts, val, onChange)=>{
+      const w = document.createElement("div");
+      const l = document.createElement("label"); l.textContent = labelTxt;
+      const s = document.createElement("select");
+      s.innerHTML = `<option value=""></option>${opts.map(v=>`<option value="${v}">${v}</option>`).join("")}`;
+      s.value = val || "";
+      s.addEventListener("change", ()=> onChange(s.value));
+      w.appendChild(l); w.appendChild(s);
+      return w;
+    };
+    const mkInp = (labelTxt, ph, val, onChange)=>{
+      const w = document.createElement("div");
+      const l = document.createElement("label"); l.textContent = labelTxt;
+      const i = document.createElement("input");
+      i.type = "text"; i.placeholder = ph || ""; i.value = val || "";
+      i.addEventListener("input", ()=> onChange(i.value));
+      w.appendChild(l); w.appendChild(i);
+      return w;
+    };
+    grid.appendChild(mkSel("Sexo", AUTOR_SEXO_OPTIONS, a.sexo, (v)=>a.sexo=v));
+    grid.appendChild(mkSel("Rango de edad", AUTOR_EDAD_OPTIONS, a.edad_rango, (v)=>a.edad_rango=v));
+    grid.appendChild(mkSel("Constitución", AUTOR_CONSTITUCION_OPTIONS, a.constitucion, (v)=>a.constitucion=v));
+    grid.appendChild(mkSel("Altura aprox.", AUTOR_ALTURA_OPTIONS, a.altura_rango, (v)=>a.altura_rango=v));
+    grid.appendChild(mkInp("Vestimenta superior", "Chaqueta negra...", a.vestimenta_superior, (v)=>a.vestimenta_superior=v));
+    grid.appendChild(mkInp("Vestimenta inferior", "Pantalón vaquero...", a.vestimenta_inferior, (v)=>a.vestimenta_inferior=v));
+    grid.appendChild(mkInp("Idioma / acento", "Español acento canario...", a.idioma_acento, (v)=>a.idioma_acento=v));
+    grid.appendChild(mkInp("Rasgo distintivo", "Cicatriz, tatuaje...", a.rasgo_distintivo, (v)=>a.rasgo_distintivo=v));
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.type = "button";
+    del.textContent = "Eliminar";
+    del.addEventListener("click", ()=>{
+      arr.splice(idx, 1);
+      autoresStateByKey[currentAuthorsKey] = arr;
+      renderAuthors();
+    });
+    card.appendChild(grid);
+    card.appendChild(del);
+    list.appendChild(card);
+  });
 }
 function normalizeAuthorsByKey(key){
   const arr = Array.isArray(autoresStateByKey[key]) ? autoresStateByKey[key] : [];
@@ -2154,15 +2278,16 @@ function normalizeAuthorsByKey(key){
     (a.rasgo_distintivo||"").trim()
   );
 }
-$("btnCloseAuthors")?.addEventListener("click", closeAuthors);
-$("authorsBack")?.addEventListener("click", (e)=>{ if (e.target === $("authorsBack")) closeAuthors(); });
-$("btnAddAuthor")?.addEventListener("click", ()=>{
-  if (!autoresStateByKey[currentAuthorsKey]) autoresStateByKey[currentAuthorsKey] = [];
+$("btnCloseAuthors").addEventListener("click", closeAuthors);
+$("authorsBack").addEventListener("click", (e)=>{ if (e.target === $("authorsBack")) closeAuthors(); });
+$("btnAddAuthor").addEventListener("click", ()=>{
+  if (!currentAuthorsKey) return;
+  if (!Array.isArray(autoresStateByKey[currentAuthorsKey])) autoresStateByKey[currentAuthorsKey] = [];
   autoresStateByKey[currentAuthorsKey].push({
-    sexo: "NO DETERMINADO",
-    edad_rango: "30-40",
-    constitucion: "NO DETERMINADA",
-    altura_rango: "NO DETERMINADA",
+    sexo: "",
+    edad_rango: "",
+    constitucion: "",
+    altura_rango: "",
     vestimenta_superior: "",
     vestimenta_inferior: "",
     idioma_acento: "",
@@ -2170,39 +2295,178 @@ $("btnAddAuthor")?.addEventListener("click", ()=>{
   });
   renderAuthors();
 });
-$("btnSaveAuthors")?.addEventListener("click", ()=>{
+$("btnSaveAuthors").addEventListener("click", ()=>{
   if (!currentAuthorsKey) return closeAuthors();
   normalizeAuthorsByKey(currentAuthorsKey);
-  renderWizard(); // refresh visible counter for the authors step
+  renderWizard(); // refresca el contador visible del bloque authors
   closeAuthors();
 });
 
 // =============================
 // Guardado / carga
 // =============================
+function persistLocalState(status){
+  try{
+    const outLocal = {
+      estado: status || (draftSyncFinalized ? "FINALIZADA" : draftSyncStarted ? "INICIADA" : "NUEVA"),
+      ...buildLocalPayload()
+    };
+    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
+  }catch(_){ }
+}
+
+function refreshPersonalPhaseUI(){
+  const title = $("personalPhaseTitle");
+  const intro = $("personalPhaseIntro");
+  const codeLabel = $("reportCodeLabel");
+  const codeValue = $("reportCodeValue");
+  const copyBtn = $("btnCopyPersonal");
+  const shareBtn = $("btnShareDevice");
+  const waBtn = $("btnShareWhatsapp");
+  const mailBtn = $("btnShareEmail");
+  if (title) title.textContent = uiText("personal_phase_title");
+  if (intro) intro.textContent = uiText("personal_phase_intro");
+  if (codeLabel) codeLabel.textContent = uiText("report_code_label");
+  if (codeValue) codeValue.textContent = reportCode || "-----";
+  if (copyBtn) copyBtn.textContent = uiText("copy_personal");
+  if (shareBtn) shareBtn.textContent = uiText("share_device");
+  if (waBtn) waBtn.textContent = uiText("share_whatsapp");
+  if (mailBtn) mailBtn.textContent = uiText("share_email");
+}
+
+function setPersonalShareStatus(text){
+  const el = $("personalShareStatus");
+  if (el) el.textContent = text || "";
+}
+
+function validatePersonalData(){
+  if (isGtdBypass()) return true;
+  const nombre = ($("fNombre")?.value||"").trim();
+  const apellidos = ($("fApellidos")?.value||"").trim();
+  const tipoDoc = ($("fTipoDoc")?.value||"").trim();
+  const otroDoc = ($("fOtroDoc")?.value||"").trim();
+  const numDoc = ($("fNumDoc")?.value||"").trim();
+  const sexo = ($("fSexo")?.value||"").trim();
+  const fechaNac = ($("fNacFecha")?.value||"").trim();
+  const dir = ($("fDomDir")?.value||"").trim();
+
+  const isIndoc = /INDOCUMENTAD/.test(normUp(tipoDoc));
+  if (!nombre || !apellidos || !tipoDoc || !sexo || !fechaNac || !dir){
+    return failValidation("Completa los campos obligatorios de datos personales.");
+  }
+  if (tipoDoc === "Otro documento de Identidad" && !otroDoc){
+    return failValidation("Indica cuál es el otro documento de identidad.");
+  }
+  if (!isIndoc && !numDoc){
+    return failValidation("El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.");
+  }
+  if (tipoDoc === "DNI" && /^[A-Za-z]/.test(numDoc)){
+    return failValidation("Si el número empieza por letra corresponde a NIE. Seleccione NIE como tipo de documento.");
+  }
+
+  const canonCountry = (v)=> (typeof canonicalCountry === "function") ? canonicalCountry(v) : normUp(v);
+  const nat = canonCountry($("fNac")?.value);
+  if (!nat || !__PAISES_SET.has(nat)) return failValidation("Selecciona una NACIONALIDAD válida (usa las píldoras).");
+
+  const paisNac = canonCountry($("fNacPais")?.value);
+  if (!paisNac || !__PAISES_SET.has(paisNac)) return failValidation("Selecciona un PAÍS de nacimiento válido (usa las píldoras).");
+  if (paisNac === "ESPAÑA") {
+    const prov = ($("fNacProv")?.value||"").trim();
+    const mun = ($("fNacMun")?.value||"").trim();
+    if (!prov || !mun) return failValidation("Si el país de nacimiento es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+  }
+
+  const paisDom = canonCountry($("fDomPais")?.value);
+  if (!paisDom || !__PAISES_SET.has(paisDom)) return failValidation("Selecciona un país de DOMICILIO válido (usa las píldoras).");
+  if (paisDom === "ESPAÑA") {
+    const provD = ($("fDomProv")?.value||"").trim();
+    const munD = ($("fDomMun")?.value||"").trim();
+    if (!provD || !munD) return failValidation("Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.");
+  }
+
+  if ($("fResideTfeNo")?.checked){
+    const est = ($("fEstanciaEventual")?.value||"").trim();
+    const fv = ($("fFechaVuelta")?.value||"").trim();
+    if (!est || !fv) return failValidation("Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.");
+  }
+  return true;
+}
+
+function buildPersonalShareText(){
+  const filiacion = readFiliacion();
+  const lines = [];
+  if (reportCode) lines.push(`${uiText("report_code_label")}: ${reportCode}`);
+  for (const [k, v] of Object.entries(filiacion)){
+    const s = String(v || "").trim();
+    if (!s) continue;
+    lines.push(`${k}: ${s}`);
+  }
+  if ($("fResideTfeNo")?.checked){
+    const est = ($("fEstanciaEventual")?.value||"").trim();
+    const fv = ($("fFechaVuelta")?.value||"").trim();
+    if (est) lines.push(`estancia_eventual: ${est}`);
+    if (fv) lines.push(`fecha_vuelta: ${fv}`);
+  }
+  return lines.join("\n");
+}
+
+async function sharePersonalData(mode){
+  if (!validatePersonalData()) return;
+  const text = buildPersonalShareText();
+  persistLocalState("FINALIZADA");
+  try{
+    if (mode === "copy"){
+      await navigator.clipboard.writeText(text);
+      setPersonalShareStatus(uiText("share_copied"));
+      showToast(uiText("share_copied"));
+      return;
+    }
+    if (mode === "device"){
+      if (!navigator.share) throw new Error(uiText("share_unavailable"));
+      await navigator.share({ title: uiText("personal_title"), text });
+      setPersonalShareStatus(uiText("share_ready"));
+      return;
+    }
+    if (mode === "whatsapp"){
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      setPersonalShareStatus(uiText("share_ready"));
+      return;
+    }
+    if (mode === "email"){
+      const subject = encodeURIComponent(`${uiText("personal_title")}${reportCode ? " · " + reportCode : ""}`);
+      const body = encodeURIComponent(text);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      setPersonalShareStatus(uiText("share_ready"));
+    }
+  }catch(err){
+    const msg = (err && err.message) ? err.message : uiText("share_error");
+    setPersonalShareStatus(msg);
+    alert(msg);
+  }
+}
+
 async function saveInitialPredenuncia(){
   if (!token) return;
 
-  const p = buildPayload();
-  try{
-    const outLocal = { estado:"INICIADA", ...p };
-    localStorage.setItem(storageKey(), JSON.stringify(outLocal));
-  }catch(_){ }
+  reportCode = await ensureReportCode();
+  const p = buildHechosPayload();
+  persistLocalState("INICIADA");
 
-  const ref = doc(db, "predenuncias", token);
-  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-  const sexo_publico = (p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]).trim() : "";
-  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-
-  await setDoc(ref, {
+  await setDoc(doc(db, "predenuncias", reportCode), {
+    codigo: reportCode,
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    label_publico,
-    sexo_publico,
-    filiacion_enc,
+    label_publico: reportCode,
+    hechos: p.hechos,
     createdAt: serverTimestamp(),
     startedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+
+  await setDoc(doc(db, "tokenSessions", token), {
+    reportCode,
+    crimeType: currentTipoFinal(),
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2214,111 +2478,74 @@ async function saveInitialPredenuncia(){
 async function syncStartedPredenuncia(force = false){
   if (!draftSyncStarted || draftSyncFinalized || !token) return;
 
-  const p = buildPayload();
+  reportCode = await ensureReportCode();
+  const p = buildHechosPayload();
   const fingerprint = computeDraftFingerprint(p);
   if (!force && fingerprint && fingerprint === lastDraftFingerprint) return;
 
-  const ref = doc(db, "predenuncias", token);
-  const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-  const sexo_publico = (p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]).trim() : "";
-  const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-
-  await setDoc(ref, {
+  await setDoc(doc(db, "predenuncias", reportCode), {
+    codigo: reportCode,
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    label_publico,
-    sexo_publico,
-    filiacion_enc,
+    label_publico: reportCode,
     hechos: p.hechos,
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
+  await setDoc(doc(db, "tokenSessions", token), {
+    reportCode,
+    crimeType: currentTipoFinal(),
+    lastUpdatedAt: serverTimestamp()
+  }, { merge: true });
+
+  persistLocalState("INICIADA");
   lastDraftFingerprint = fingerprint;
 }
 
 async function saveFinal(){
   try{
-    if (!token){ alert(trUI("Falta token en la URL.")); return; }
+    if (!token){ alert(uiText("missing_token")); return; }
 
-    const p = buildPayload();
-    const label_publico = buildLabelPublicoFromFiliacion(p.filiacion);
-    const filiacion_enc = encryptFiliacionForCompapol(p.filiacion);
-    const sexo_publico = (p.filiacion && p.filiacion["Sexo"]) ? String(p.filiacion["Sexo"]).trim() : "";
-    const docText = `${label_publico} ${sexo_publico} | (${new Date().toLocaleString()})`;
+    reportCode = await ensureReportCode();
+    const p = buildHechosPayload();
+    const docText = (p.hechos && (p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen)) ? String(p.hechos.resumen || p.hechos.Resumen || p.hechos.hecho_resumen) : "";
 
-    try{
-      const outLocal = { estado:"FINALIZADA", ...p };
-      localStorage.setItem(storageKey(), JSON.stringify(outLocal));
-    }catch(_){ }
-
-    const ref = doc(db, "predenuncias", token);
-
-    await setDoc(ref, {
+    await setDoc(doc(db, "predenuncias", reportCode), {
+      codigo: reportCode,
       estado: "FINALIZADA",
       tipo: currentTipoFinal(),
       token,
-      label_publico,
-      sexo_publico,
-      doc: docText,
-      filiacion_enc,
+      label_publico: reportCode,
       hechos: p.hechos,
-      createdAt: serverTimestamp(),
+      doc: docText,
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
 
+    await setDoc(doc(db, "tokenSessions", token), {
+      reportCode,
+      crimeType: currentTipoFinal(),
+      finalizedAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp()
+    }, { merge: true });
+
+    draftSyncStarted = true;
     draftSyncFinalized = true;
+    flowPhase = "filiacion";
+    persistLocalState("FINALIZADA");
+    setPersonalShareStatus("");
 
     const msg = $("doneMsg");
-    if (msg) msg.style.display = "block";
-    document.body.innerHTML = `
-      <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
-        <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
-          <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-            ${finalText("title")}
-          </h2>
-          <p style="margin:0;color:rgba(255,255,255,.72)">
-            ${finalText("sub")}
-          </p>
-        </div>
-      </div>
-    `;
-    return;
-
+    if (msg){
+      msg.style.display = "block";
+      msg.textContent = `${uiText("facts_sent_title")} ${reportCode ? "· " + reportCode : ""}`;
+    }
+    updateStepUI(false);
+    alert(`${uiText("facts_sent_title")}.\n${uiText("facts_sent_sub")}`);
   }catch(err){
     const m = (err && err.message) ? err.message : String(err);
-    if (err && err.code === "permission-denied") {
-      alert(trUI("No hay permisos para finalizar. El enlace puede haber caducado o estar invalidado. Solicite un enlace nuevo."));
-    } else {
-      alert(trUI("ERROR AL FINALIZAR: ") + m);
-    }
-  }
-}
-
-function invalidateIfFinalized(){
-  const raw = localStorage.getItem(storageKey());
-  if (!raw) return;
-
-  try{
-    const x = JSON.parse(raw);
-    if (x.estado === "FINALIZADA"){
-      document.body.innerHTML = `
-        <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px">
-          <div style="max-width:720px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:18px;background:rgba(255,255,255,.06);backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);box-shadow:0 18px 46px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)">
-            <h2 style="margin:0 0 10px;font-weight:900;letter-spacing:.2px">
-              ${finalText("title")}
-            </h2>
-            <p style="margin:0;color:rgba(255,255,255,.72)">
-              ${finalText("sub")}
-            </p>
-          </div>
-        </div>
-      `;
-      throw "__STOP__";
-    }
-  }catch(e){
-    if (e !== "__STOP__") {}
+    alert("ERROR AL FINALIZAR: " + m);
   }
 }
 
@@ -2327,6 +2554,10 @@ function loadIfAny(){
   if (!raw) return;
   try{
     const x = JSON.parse(raw);
+    flowPhase = x.phase === "filiacion" ? "filiacion" : "hechos";
+    reportCode = String(x.reportCode || x.meta?.reportCode || "").trim();
+    draftSyncStarted = x.estado === "INICIADA" || x.estado === "FINALIZADA";
+    draftSyncFinalized = x.estado === "FINALIZADA";
 
     // Filiación
     const f = x.filiacion || {};
@@ -2336,7 +2567,7 @@ function loadIfAny(){
     $("fOtroDoc").value = f["Otro documento"]||"";
     applyTipoDocVisibility();
     $("fNumDoc").value = f["Nº Documento"]||"";
-    $("fNac").value = displayCountry(f["Nacionalidad"]||"");
+    $("fNac").value = f["Nacionalidad"]||"";
     $("fNacFecha").value = f["Fecha de nacimiento"]||"";
     $("fNacLugar").value = f["Lugar de nacimiento"]||"";
     $("fDomDir").value = f["Domicilio"]||"";
@@ -2350,7 +2581,7 @@ function loadIfAny(){
     $("fTel").value = f["Teléfono"]||"";
     $("fSexo").value = f["Sexo"]||"";
     $("fPadres").value = f["Nombre de los Padres"]||"";
-    $("fNacPais").value = displayCountry(f["País nacimiento"]||"");
+    $("fNacPais").value = f["País nacimiento"]||"";
     $("fNacLugar").value = f["Lugar de nacimiento"]||"";
     $("fNacProvOut").value = f["Provincia nacimiento"]||"";
     $("fNacMunOut").value = f["Municipio nacimiento"]||"";
@@ -2381,44 +2612,38 @@ function loadIfAny(){
     wiz.st.resumen = h.resumen || "";
 
     objetosState = Array.isArray(h.objetos) ? h.objetos.slice() : (Array.isArray(h.objetos_extraviados) ? h.objetos_extraviados.slice() : (Array.isArray(h.extravio_objetos) ? h.extravio_objetos.slice() : []));
+    const authorKeys = ["autores", "descripcion_autor", "descripcion_autores"];
+    for (const k of authorKeys){
+      if (Array.isArray(h[k])) autoresStateByKey[k] = h[k].slice();
+    }
     updateObjsCount();
-    try{
-      if (Array.isArray(h.autores)) autoresStateByKey.autores = h.autores.slice();
-      if (Array.isArray(h.descripcion_autor)) autoresStateByKey.descripcion_autor = h.descripcion_autor.slice();
-    }catch(_){ }
 
   }catch(_){ }
 }
 
 // INIT
-invalidateIfFinalized();
 loadIfAny();
 try{
-  const raw = localStorage.getItem(storageKey());
-  if (raw){
-    const x = JSON.parse(raw);
-    draftSyncStarted = x.estado === "INICIADA";
-    draftSyncFinalized = x.estado === "FINALIZADA";
-    if (draftSyncStarted) lastDraftFingerprint = computeDraftFingerprint(buildPayload());
-  }
+  if (draftSyncStarted) lastDraftFingerprint = computeDraftFingerprint(buildHechosPayload());
 }catch(_){ }
 renderWizard();
 applyTipoDocVisibility();
 updateObjsCount();
 renderNacPills();
+refreshPersonalPhaseUI();
 try{ toggleNacEsUI(); }catch(_){ }
 try{ toggleDomEsUI(); }catch(_){ }
 try{
   const isMobile = window.matchMedia("(max-width:720px)").matches;
-  document.body.classList.toggle("noScroll", (wiz.idx !== 0) && isMobile);
+  document.body.classList.toggle("noScroll", isIncidentPhase() && isMobile);
 }catch(_){ }
 window.addEventListener("resize", ()=>{
   try{ updateStepUI(false); }catch(_){ }
 });
 window.setInterval(()=>{ void syncStartedPredenuncia(false).catch(err => console.warn("autosavePredenuncia", err)); }, AUTOSAVE_INTERVAL_MS);
 // Debug helpers for browser console
-window.dumpPredenunciaPayload = () => buildPayload();
-window.dumpPredenunciaHechos = () => buildPayload().hechos;
+window.dumpPredenunciaPayload = () => buildLocalPayload();
+window.dumpPredenunciaHechos = () => buildHechosPayload().hechos;
 // Si hay tipo desconocido, lo dejamos funcionando igualmente.
 </script>
 </body>
