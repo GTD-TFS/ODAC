@@ -341,13 +341,24 @@
   @media(max-width:720px){
     .step[data-key="caracteristica_hecho"] .choices.pills,
     .step[data-key="caracteristica_hecho_p2"] .choices.pills{
-      gap:16px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      max-width:none;
     }
     .step[data-key="caracteristica_hecho"] .choices.pills .choiceBtn,
     .step[data-key="caracteristica_hecho_p2"] .choices.pills .choiceBtn{
-      padding:14px 16px;
-      font-size:14px;
+      min-height:52px;
+      padding:10px 10px;
+      font-size:12px;
+      line-height:1.12;
+      letter-spacing:.05px;
     }
+    body.noScroll .wrap{padding:10px 8px}
+    body.noScroll .card{padding:10px 10px 8px}
+    body.noScroll .navRow{padding-top:8px}
+    body.noScroll #dynSteps{overflow:hidden}
+    body.noScroll .stepPanel{overflow:hidden}
   }
 
   /* Evita el zoom al pulsar inputs en iTelefon */
