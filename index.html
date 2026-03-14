@@ -2152,6 +2152,22 @@
 
     const TOKEN_TTL_MINUTES = 480;
 
+    async function loadShareDefaults() {
+      try {
+        const snap = await getDoc(doc(db, "appConfig", "shareDefaults"));
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        return {
+          shareWhatsappTarget: String(data.shareWhatsappTarget || "").trim(),
+          shareEmailTarget: String(data.shareEmailTarget || "").trim()
+        };
+      } catch (_) {
+        return {
+          shareWhatsappTarget: "",
+          shareEmailTarget: ""
+        };
+      }
+    }
+
     async function generateTokenFor(tipo) {
       tipo = (tipo || "").trim().toUpperCase();
       if (!tipo) return;
@@ -2161,6 +2177,7 @@
       const id = `P-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       const purgeAt = purgeAtToday2359();
       const link = await buildDenuncianteLink(tipo, token);
+      const shareDefaults = await loadShareDefaults();
 
       // Crea la sesión del token en Firestore para que el denunciante pueda FINALIZAR
       // expiresAt debe ser Timestamp (no string)
@@ -2168,6 +2185,8 @@
         await setDoc(doc(db, "tokenSessions", token), {
           crimeType: tipo,
           reportCode,
+          shareWhatsappTarget: shareDefaults.shareWhatsappTarget || "",
+          shareEmailTarget: shareDefaults.shareEmailTarget || "",
           revoked: false,
           createdAt: serverTimestamp(),
           expiresAt: Timestamp.fromMillis(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000)
