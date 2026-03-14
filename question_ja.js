@@ -2,19 +2,19 @@
 // ===== UI language (English) - internal values remain Spanish =====
 const UI_JA = {
   "CARACTERÍSTICAS DEL HECHO": "事件カテゴリ",
-  "EXTRAVÍO/PÉRDIDA": "🧳 紛失 / 置き忘れ",
-  "SUSTRACCIÓN": "🕵️ 強盗 / 窃盗",
-  "DAÑOS": "🧱 器物損壊",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ 詐欺 / オンライン詐欺",
-  "AGRESIÓN": "👊 暴行 / 傷害",
-  "AMENAZAS": "🗣️ 脅迫",
-  "OTRO TIPO DE HECHO": "➡️ その他の事案",
+  "EXTRAVÍO/PÉRDIDA": "  🧳   紛失 / 置き忘れ",
+  "SUSTRACCIÓN": "  🕵️   強盗 / 窃盗",
+  "DAÑOS": "  🧱   器物損壊",
+  "ESTAFA / ESTAFA INFORMÁTICA": "  💳   詐欺 / オンライン詐欺",
+  "AGRESIÓN": "  👊   暴行 / 傷害",
+  "AMENAZAS": "  🗣️   脅迫",
+  "OTRO TIPO DE HECHO": "  ➡️   その他の事案",
   "OTROS TIPOS DE HECHO": "その他の事案",
-  "ALLANAMIENTO / USURPACIÓN": "🏠 住居侵入 / 不法占拠",
-  "APROPIACIÓN INDEBIDA": "📦 横領",
-  "COACCIONES": "🧷 強要",
-  "CARÁCTER SEXUAL": "🔒 性的犯罪",
-  "DENUNCIA GENÉRICA": "🧩 一般申告",
+  "ALLANAMIENTO / USURPACIÓN": "  🏠   住居侵入 / 不法占拠",
+  "APROPIACIÓN INDEBIDA": "  📦   横領",
+  "COACCIONES": "  🧷   強要",
+  "CARÁCTER SEXUAL": "  🔒   性的犯罪",
+  "DENUNCIA GENÉRICA": "  🧩   一般申告",
   "OTROS": "その他",
   "¿DÓNDE SE PRODUCE LA SUSTRACCIÓN?": "窃盗はどこで発生しましたか？",
   "A LA PERSONA": "対人",
@@ -503,7 +503,11 @@ const QUESTION_SETS = {
         "ESTAFA / ESTAFA INFORMÁTICA",
         "AGRESIÓN",
         "AMENAZAS",
-        "OTRO TIPO DE HECHO"
+        "ALLANAMIENTO / USURPACIÓN",
+        "APROPIACIÓN INDEBIDA",
+        "COACCIONES",
+        "CARÁCTER SEXUAL",
+        "DENUNCIA GENÉRICA"
       ]
     }
   ],
@@ -1313,7 +1317,7 @@ const QUESTION_SETS = {
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
 Object.assign(UI_JA, {
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 詐欺 / オンライン詐欺",
+  "ESTAFA / ESTAFA INFORMÁTICA": "  💳   詐欺 / オンライン詐欺",
   "ESPECIFIQUE OTRO TIPO DE ESTABLECIMIENTO": "その他の施設種別を記入",
   "ESPECIFIQUE OTRA ZONA DEL ESTABLECIMIENTO": "その他の施設内エリアを記入",
   "ESPECIFIQUE OTRO SUBTIPO DE ESTAFA": "その他の詐欺類型を記入",
