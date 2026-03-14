@@ -2379,6 +2379,41 @@ function setPersonalShareStatus(text){
   if (el) el.textContent = text || "";
 }
 
+function triggerShareHref(href, useBlank = false){
+  if (!href) return;
+  const a = document.createElement("a");
+  a.href = href;
+  if (useBlank) {
+    a.target = "_blank";
+    a.rel = "noopener";
+  }
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function openWhatsappShare(text){
+  const to = String(shareTargetsCache.whatsapp || "").replace(/[^\d]/g, "");
+  const msg = encodeURIComponent(text);
+  const appHref = to ? `whatsapp://send?phone=${to}&text=${msg}` : `whatsapp://send?text=${msg}`;
+  const webHref = to ? `https://api.whatsapp.com/send?phone=${to}&text=${msg}` : `https://api.whatsapp.com/send?text=${msg}`;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  if (isMobile) {
+    triggerShareHref(appHref, false);
+    setTimeout(()=>{
+      if (document.visibilityState === "visible") triggerShareHref(webHref, false);
+    }, 700);
+    return;
+  }
+  triggerShareHref(webHref, true);
+}
+
+function openEmailShare(subject, body){
+  const to = encodeURIComponent(String(shareTargetsCache.email || "").trim());
+  triggerShareHref(`mailto:${to}?subject=${subject}&body=${body}`, false);
+}
+
 function validatePersonalData(){
   if (isGtdBypass()) return true;
   const nombre = ($("fNombre")?.value||"").trim();
@@ -2462,17 +2497,14 @@ async function sharePersonalData(mode){
       return;
     }
     if (mode === "whatsapp"){
-      const to = String(shareTargetsCache.whatsapp || "").replace(/[^\d]/g, "");
-      const base = to ? `https://wa.me/${to}` : "https://wa.me/";
-      window.open(`${base}?text=${encodeURIComponent(text)}`, "_blank");
+      openWhatsappShare(text);
       setPersonalShareStatus(uiText("share_ready"));
       return;
     }
     if (mode === "email"){
       const subject = encodeURIComponent(`${uiText("personal_title")}${reportCode ? " · " + reportCode : ""}`);
       const body = encodeURIComponent(text);
-      const to = encodeURIComponent(String(shareTargetsCache.email || "").trim());
-      window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+      openEmailShare(subject, body);
       setPersonalShareStatus(uiText("share_ready"));
     }
   }catch(err){

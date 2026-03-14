@@ -86,7 +86,6 @@ const QUESTION_SETS = {
     "descripcion_autores": "autores_descripcion",
 
     "resumen": "hecho_resumen",
-    "detalle_adicional": "hecho_detalle_adicional",
 
     "agresion_tipo": "agresion_tipo",
     "objetos_extraviados": "extravio_objetos",
@@ -321,16 +320,10 @@ const QUESTION_SETS = {
 
     {
       key: "resumen",
-      title: "RESUMEN DE LOS HECHOS",
+      title:"BREVE RESUMEN DE LOS HECHOS",
       type: "textarea",
       max: 900
     },
-    {
-      key: "detalle_adicional",
-      title: "DETALLE ADICIONAL (OPCIONAL)",
-      type: "textarea",
-      max: 900
-    }
   ],
 
   // denunciante_patrimonio.html
@@ -890,8 +883,7 @@ const QUESTION_SETS = {
         { key:"evidencias_estafa", title:"EVIDENCIAS DISPONIBLES", type:"select", options:["CAPTURAS","JUSTIFICANTES","MENSAJES","AUDIOS","VARIAS","NINGUNA"] }
       ]
     },
-    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
-    { key:"detalle_adicional", title:"DETALLE ADICIONAL (OPCIONAL)", type:"textarea", max:900 }
+    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -907,8 +899,7 @@ const QUESTION_SETS = {
     { key:"n_eventos_aprox", title:"NÚMERO APROXIMADO DE EVENTOS", type:"text", when:(st)=> (st.reiteracion_coaccion === "REITERADO") },
     { key:"perjuicio_coaccion", title:"PERJUICIO PRINCIPAL", type:"select", options:["PERSONAL","LABORAL","ECONÓMICO","FAMILIAR","OTRO"] },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
-    { key:"detalle_adicional", title:"DETALLE ADICIONAL (OPCIONAL)", type:"textarea", max:900 }
+    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -927,8 +918,7 @@ const QUESTION_SETS = {
     { key:"objetos", title:"OBJETOS SUSTRAÍDOS", type:"objects", when:(st)=> (st.sustraccion === "SI") },
     { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NO","SI"] },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
-    { key:"detalle_adicional", title:"DETALLE ADICIONAL (OPCIONAL)", type:"textarea", max:900 }
+    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -946,8 +936,7 @@ const QUESTION_SETS = {
     { key:"respuesta_requerido", title:"RESPUESTA DEL REQUERIDO", type:"select", options:["SE NIEGA","NO CONTESTA","PROMETE DEVOLVER","OTRA"], when:(st)=> (st.requerimiento_devolucion === "SI") },
     { key:"importe_estimado_eur", title:"IMPORTE ESTIMADO (€)", type:"text", placeholder:"Ej.: 850" },
     { key:"autores", title:"DATOS / DESCRIPCIÓN DEL AUTOR", type:"authors" },
-    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
-    { key:"detalle_adicional", title:"DETALLE ADICIONAL (OPCIONAL)", type:"textarea", max:900 }
+    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -982,8 +971,7 @@ const QUESTION_SETS = {
     { key:"camaras_detalle", title:"GESTIÓN DE GRABACIONES", type:"text",
       when:(st)=> (st.camaras === "SI")
     },
-    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
-    { key:"detalle_adicional", title:"DETALLE ADICIONAL (OPCIONAL)", type:"textarea", max:900 }
+    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ]
 };
 export const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
