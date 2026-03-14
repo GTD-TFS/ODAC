@@ -443,11 +443,25 @@
     body.noScroll .wrap{padding:4px}
     body.noScroll .card{padding:4px 4px 2px}
     body.noScroll .navRow{padding-top:2px}
+    body.noScroll .step.isActive{min-height:0}
     body.noScroll #dynSteps{overflow-y:auto;overflow-x:hidden}
     body.noScroll .stepPanel{
+      justify-content:flex-start;
+      min-height:0;
       overflow-y:auto;
       overflow-x:hidden;
-      padding-bottom:calc(122px + env(safe-area-inset-bottom));
+      padding:10px 10px calc(98px + env(safe-area-inset-bottom));
+    }
+    .navRow{gap:8px}
+    .navRow .left{gap:8px}
+    .pill{min-width:96px}
+    .choices{gap:6px}
+    .choices.pills{gap:12px}
+    .choices .choiceBtn{
+      min-height:40px;
+      padding:10px 12px;
+      font-size:13px;
+      line-height:1.15;
     }
     .step[data-key="caracteristica_hecho"] .choices.pills,
     .step[data-key="caracteristica_hecho_p2"] .choices.pills{
