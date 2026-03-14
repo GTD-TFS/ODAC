@@ -2074,7 +2074,7 @@ function makeStepEl(q){
         if (!inputEl) inputEl = sel;
       } else if (it.type === "textarea"){
         const ta = document.createElement("textarea");
-        ta.placeholder = it.placeholder || "";
+        ta.placeholder = trUI(it.placeholder || "");
         if (it.max) ta.maxLength = it.max;
         ta.value = wiz.st[it.key] || "";
         ta.addEventListener("input", ()=>{ wiz.st[it.key] = ta.value; refreshItemVisibility(); });
@@ -2090,7 +2090,7 @@ function makeStepEl(q){
       } else {
         const inp = document.createElement("input");
         inp.type = "text";
-        inp.placeholder = it.placeholder || "";
+        inp.placeholder = trUI(it.placeholder || "");
         inp.value = wiz.st[it.key] || "";
         inp.addEventListener("input", ()=>{ wiz.st[it.key] = inp.value; refreshItemVisibility(); });
         w.appendChild(inp);
