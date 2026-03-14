@@ -202,7 +202,7 @@
     background:rgba(17,28,51,.96);
     border:1px solid var(--edge);
     border-radius:18px;
-    padding:14px;
+    padding:0;
     display:flex;
     flex-direction:column;
     min-height:0;
@@ -265,8 +265,42 @@
         "cant cant del";
     }
   }
-  .modalHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .modalHead{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+    padding:14px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background:rgba(10,18,34,.96);
+  }
   .modalTitle{font-weight:900}
+  .modalBody{
+    flex:1;
+    min-height:0;
+    overflow:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding:12px 14px;
+    scroll-padding-top:14px;
+    scroll-padding-bottom:108px;
+    scroll-snap-type:y proximity;
+  }
+  .modalDock{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex:0 0 auto;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid rgba(255,255,255,.08);
+    background:rgba(10,18,34,.98);
+    align-items:stretch;
+  }
+  .modalDock .btn{
+    flex:1 1 0;
+    min-width:0;
+  }
   .objSummary{
     width:100%;
     margin-top:10px;
@@ -286,18 +320,16 @@
     border-radius:10px;
     background:rgba(255,255,255,.035);
   }
-  #objsList{
-    margin-top:10px;
+  #objsList,#authorsList{
     display:flex;
     flex-direction:column;
-    gap:10px;
-    flex:1;
-    min-height:0;
-    overflow:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
-    padding-right:2px;
-    padding-bottom:6px;
+    gap:14px;
+    min-height:100%;
+    padding-bottom:4px;
+  }
+  .objCard{
+    scroll-margin-block:14px;
+    scroll-snap-align:start;
   }
 
   .btn.small{padding:8px 10px;border-radius:10px}
@@ -656,11 +688,10 @@
       <div class="modalTitle">物品</div>
       <button class="btn small secondary" id="btnCloseObjs" type="button">关闭</button>
     </div>
-
-
-    <div id="objsList"></div>
-
-    <div class="row" style="justify-content:space-between;margin-top:12px">
+    <div class="modalBody">
+      <div id="objsList"></div>
+    </div>
+    <div class="modalDock">
       <button class="btn secondary" id="btnAddObj" type="button">新增物品</button>
       <button class="btn ok" id="btnSaveObjs" type="button">保存</button>
     </div>
@@ -672,8 +703,10 @@
       <div class="modalTitle">作者特征</div>
       <button class="btn small secondary" id="btnCloseAuthors" type="button">关闭</button>
     </div>
-    <div id="authorsList" style="margin-top:10px;display:flex;flex-direction:column;gap:10px"></div>
-    <div class="row" style="justify-content:space-between;margin-top:12px">
+    <div class="modalBody">
+      <div id="authorsList"></div>
+    </div>
+    <div class="modalDock">
       <button class="btn secondary" id="btnAddAuthor" type="button">+</button>
       <button class="btn ok" id="btnSaveAuthors" type="button">保存</button>
     </div>
@@ -1886,7 +1919,7 @@ function makeStepEl(q){
     b.className = "btn secondary";
     b.type = "button";
     b.id = "q_objBtn";
-    b.textContent = trUI("AÑADIR / EDITAR OBJETOS");
+    b.textContent = "添加 / 编辑物品";
     b.addEventListener("click", ()=> openObjs(!!q.noValue));
 
     const c = document.createElement("div");
@@ -2256,15 +2289,18 @@ function renderObjectsSummaryInto(node){
   });
 }
 
-function keepObjectFieldInView(target){
-  const list = $("objsList");
-  if (!list || !target) return;
-  const card = target.closest(".objCard") || target;
+function scrollCardIntoModalView(target, block = "start"){
+  if (!target) return;
   requestAnimationFrame(()=>{
     try{
-      card.scrollIntoView({ block:"nearest", inline:"nearest" });
+      target.scrollIntoView({ block, inline:"nearest" });
     }catch(_){}
   });
+}
+
+function keepObjectFieldInView(target){
+  const card = target.closest(".objCard") || target;
+  scrollCardIntoModalView(card, "start");
 }
 
 function openObjs(noValueMode = false){
@@ -2399,7 +2435,7 @@ $("btnAddObj").addEventListener("click", ()=>{
   requestAnimationFrame(()=>{
     const cards = $("objsList")?.querySelectorAll(".objCard");
     const last = cards && cards[cards.length - 1];
-    if (last) keepObjectFieldInView(last);
+    if (last) scrollCardIntoModalView(last, "end");
   });
 });
 
@@ -2438,6 +2474,7 @@ function authorCard(author, idx){
     s.innerHTML = options.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
     s.value = author[key] || options[0];
     s.addEventListener("change", ()=>{ author[key] = s.value; });
+    s.addEventListener("focus", ()=> scrollCardIntoModalView(wrap, "start"));
     w.appendChild(l); w.appendChild(s);
     return w;
   };
@@ -2459,6 +2496,7 @@ function authorCard(author, idx){
     i.placeholder = ph || "";
     i.value = author[key] || "";
     i.addEventListener("input", ()=>{ author[key] = i.value; });
+    i.addEventListener("focus", ()=> scrollCardIntoModalView(wrap, "start"));
     w.appendChild(l); w.appendChild(i);
     return w;
   };
@@ -2526,6 +2564,11 @@ $("btnAddAuthor")?.addEventListener("click", ()=>{
     rasgo_distintivo: ""
   });
   renderAuthors();
+  requestAnimationFrame(()=>{
+    const cards = $("authorsList")?.querySelectorAll(".objCard");
+    const last = cards && cards[cards.length - 1];
+    if (last) scrollCardIntoModalView(last, "end");
+  });
 });
 $("btnSaveAuthors")?.addEventListener("click", ()=>{
   if (!currentAuthorsKey) return closeAuthors();
