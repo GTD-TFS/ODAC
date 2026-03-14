@@ -1056,16 +1056,30 @@
       return created + (8 * 60 * 60 * 1000);
     }
     function getPredenunciaExpiryMs(d) {
+      const explicitExp = tsToMs(d && (d.tokenExpiresAt || d.expiresAt));
+      if (explicitExp > 0) return explicitExp;
+
       const finMs = tsToMs(d && d.finalizedAt);
       if (finMs > 0) return finMs + (8 * 60 * 60 * 1000);
 
       const baseMs = Math.max(
-        tsToMs(d && d.lastUpdatedAt),
+        tsToMs(d && d.tokenCreatedAt),
         tsToMs(d && d.startedAt),
         tsToMs(d && d.createdAt)
       );
       if (baseMs <= 0) return 0;
       return baseMs + (8 * 60 * 60 * 1000);
+    }
+    function flagForLang(lang) {
+      const key = String(lang || "").toLowerCase();
+      if (key.startsWith("en")) return "🇬🇧";
+      if (key.startsWith("fr")) return "🇫🇷";
+      if (key.startsWith("de")) return "🇩🇪";
+      if (key.startsWith("it")) return "🇮🇹";
+      if (key.startsWith("ru")) return "🇷🇺";
+      if (key.startsWith("ja")) return "🇯🇵";
+      if (key.startsWith("zh")) return "🇨🇳";
+      return "🇪🇸";
     }
     function extractInboxLabel(x) {
       if (!x || typeof x !== "object") return "";
@@ -1235,6 +1249,7 @@
         codigo,
         estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
         tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
+        lang: (x.lang || "es").toString().trim().toLowerCase() || "es",
         labelPublico,
         sexoPublico: "",
         filiacionEnc: null,
@@ -1242,6 +1257,8 @@
         hechosJson: (x.hechos || {}),
         docText: (x.docText || x.doc || ""),
         createdAt: x.createdAt || null,
+        tokenCreatedAt: x.tokenCreatedAt || null,
+        tokenExpiresAt: x.tokenExpiresAt || null,
         startedAt: x.startedAt || null,
         lastUpdatedAt: x.lastUpdatedAt || null,
         finalizedAt: x.finalizedAt || null
@@ -1252,7 +1269,7 @@
       if (!nextSelected) return;
       state.selected = nextSelected;
       state.denuncias = state.denuncias.map((item) => item.id === nextSelected.id ? nextSelected : item);
-      $("selectedRef").textContent = nextSelected.labelPublico || nextSelected.codigo || nextSelected.id;
+      $("selectedRef").textContent = `${nextSelected.labelPublico || nextSelected.codigo || nextSelected.id} ${flagForLang(nextSelected.lang)}`;
       renderSelectedIntoArea();
       refreshActions();
       if (state.mode === "predenuncias") renderDenuncias();
@@ -1561,9 +1578,10 @@
         left.className = "left";
         const icon = "🧾";
         const titulo = d.labelPublico || d.codigo || d.id;
+        const flag = flagForLang(d.lang);
         const estadoTxt = d.estado === "FINALIZADA" ? "FINALIZADA" : "INICIADA";
         const estadoColor = d.estado === "FINALIZADA" ? "#22c55e" : "#f59e0b";
-        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt} · ${escapeHtml(d.tipo || "")}</div>`;
+        left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)} <span aria-label="Idioma">${flag}</span></div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt} · ${escapeHtml(d.tipo || "")}</div>`;
         el.appendChild(left);
 
         const ttl = document.createElement("span");
@@ -1614,7 +1632,7 @@
       startSelectedPredListener(d.id);
       state.dirtyDoc = false;
 
-      $("selectedRef").textContent = d.labelPublico || d.codigo || d.id;
+      $("selectedRef").textContent = `${d.labelPublico || d.codigo || d.id} ${flagForLang(d.lang)}`;
       $("workStatus").textContent = "";
       renderSelectedIntoArea();
       refreshActions();

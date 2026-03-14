@@ -1055,13 +1055,12 @@ const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
 
 // === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
 const UI_ES_OVERRIDES = {
-  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO/PÉRDIDA",
+  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO / PÉRDIDA",
   "SUSTRACCIÓN": "🕵️ ROBO / HURTO",
   "DAÑOS": "🧱 DAÑOS",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ ESTAFA / ESTAFA INFORMÁTICA",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESTAFA / ESTAFA INFORMÁTICA",
   "AGRESIÓN": "👊 AGRESIÓN",
   "AMENAZAS": "🗣️ AMENAZAS",
-  "OTRO TIPO DE HECHO": "➡️ OTRO TIPO DE HECHO",
   "ALLANAMIENTO / USURPACIÓN": "🏠 ALLANAMIENTO / USURPACIÓN",
   "APROPIACIÓN INDEBIDA": "📦 APROPIACIÓN INDEBIDA",
   "COACCIONES": "🧷 COACCIONES",
@@ -1073,10 +1072,9 @@ const CHOICE_ICON_PREFIX = {
   "EXTRAVÍO/PÉRDIDA": "🧳",
   "SUSTRACCIÓN": "🕵️",
   "DAÑOS": "🧱",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳",
   "AGRESIÓN": "👊",
   "AMENAZAS": "🗣️",
-  "OTRO TIPO DE HECHO": "➡️",
   "ALLANAMIENTO / USURPACIÓN": "🏠",
   "APROPIACIÓN INDEBIDA": "📦",
   "COACCIONES": "🧷",
@@ -1507,6 +1505,8 @@ let draftSyncFinalized = false;
 let lastDraftFingerprint = "";
 let reportCode = "";
 let flowPhase = "hechos";
+let tokenSessionExpiryAt = null;
+let tokenSessionCreatedAt = null;
 
 function computeDraftFingerprint(payload){
   try{
@@ -1534,7 +1534,10 @@ async function ensureReportCode(){
   try{
     const sessionSnap = await getDoc(doc(db, "tokenSessions", token));
     if (sessionSnap.exists()){
-      const existing = String(sessionSnap.data().reportCode || "").trim();
+      const sessionData = sessionSnap.data() || {};
+      tokenSessionExpiryAt = sessionData.expiresAt || tokenSessionExpiryAt || null;
+      tokenSessionCreatedAt = sessionData.createdAt || tokenSessionCreatedAt || null;
+      const existing = String(sessionData.reportCode || "").trim();
       if (existing){
         reportCode = existing;
         return reportCode;
@@ -2710,10 +2713,13 @@ async function saveInitialPredenuncia(){
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
+    lang: __MAP_LANG,
     label_publico: reportCode,
     sexo_publico: "",
     filiacion: {},
     hechos: p.hechos,
+    tokenCreatedAt: tokenSessionCreatedAt || null,
+    tokenExpiresAt: tokenSessionExpiryAt || null,
     createdAt: serverTimestamp(),
     startedAt: serverTimestamp(),
     lastUpdatedAt: serverTimestamp()
@@ -2736,10 +2742,13 @@ async function syncStartedPredenuncia(force = false){
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
+    lang: __MAP_LANG,
     label_publico: reportCode,
     sexo_publico: "",
     filiacion: {},
     hechos: p.hechos,
+    tokenCreatedAt: tokenSessionCreatedAt || null,
+    tokenExpiresAt: tokenSessionExpiryAt || null,
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2759,11 +2768,14 @@ async function saveFinal(){
       estado: "FINALIZADA",
       tipo: currentTipoFinal(),
       token,
+      lang: __MAP_LANG,
       label_publico: reportCode,
       sexo_publico: "",
       filiacion: {},
       hechos: p.hechos,
       doc: docText,
+      tokenCreatedAt: tokenSessionCreatedAt || null,
+      tokenExpiresAt: tokenSessionExpiryAt || null,
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });

@@ -156,7 +156,7 @@ const UI_RU = {
   "ESPECIFIQUE OTRO MÉTODO DE SUSTRACCIÓN": "УКАЖИТЕ ДРУГОЙ СПОСОБ КРАЖИ",
   "ESPECIFIQUE OTRO TIPO DE DAÑO": "УКАЖИТЕ ДРУГОЙ ТИП ПОВРЕЖДЕНИЙ",
   "Establecimiento, contacto, ubicación, horario...": "Объект, контакт, адрес, график...",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ МОШЕННИЧЕСТВО / ОНЛАЙН-МОШЕННИЧЕСТВО",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 МОШЕННИЧЕСТВО / ОНЛАЙН-МОШЕННИЧЕСТВО",
   "ESTANCO / LOTERÍA": "ТАБАК / ЛОТЕРЕЯ",
   "EVIDENCIAS DISPONIBLES": "ДОСТУПНЫЕ ДОКАЗАТЕЛЬСТВА",
   "EXTRAVÍO/PÉRDIDA": "🧳 УТЕРЯ / ПОТЕРЯ",
@@ -353,7 +353,11 @@ const GLOBAL_ROUTES = {
     "ESTAFA / ESTAFA INFORMÁTICA": "ESTAFA",
     "AGRESIÓN": "AGRESION_SELECTOR",
     "AMENAZAS": "AMENAZAS_GLOBAL",
-    "OTRO TIPO DE HECHO": "OTRO_TIPO_HECHO"
+    "ALLANAMIENTO / USURPACIÓN": "ALLANAMIENTO_USURPACION",
+    "APROPIACIÓN INDEBIDA": "APROPIACION_INDEBIDA",
+    "COACCIONES": "COACCIONES",
+    "CARÁCTER SEXUAL": "CARACTER_SEXUAL",
+    "DENUNCIA GENÉRICA": "OTROS"
   },
 
   // Entrada secundaria (segunda página de categorías)
@@ -526,7 +530,11 @@ const QUESTION_SETS = {
         "ESTAFA / ESTAFA INFORMÁTICA",
         "AGRESIÓN",
         "AMENAZAS",
-        "OTRO TIPO DE HECHO"
+        "ALLANAMIENTO / USURPACIÓN",
+        "APROPIACIÓN INDEBIDA",
+        "COACCIONES",
+        "CARÁCTER SEXUAL",
+        "DENUNCIA GENÉRICA"
       ]
     }
   ],
@@ -1330,7 +1338,7 @@ Object.assign(UI_RU, {
   "EXTRAVÍO/PÉRDIDA": "🧳 УТЕРЯ / ПОТЕРЯ",
   "SUSTRACCIÓN": "🕵️ КРАЖА / ГРАБЕЖ",
   "DAÑOS": "🧱 ПОВРЕЖДЕНИЕ ИМУЩЕСТВА",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ МОШЕННИЧЕСТВО / ОНЛАЙН-МОШЕННИЧЕСТВО",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 МОШЕННИЧЕСТВО / ОНЛАЙН-МОШЕННИЧЕСТВО",
   "AGRESIÓN": "👊 НАПАДЕНИЕ",
   "AMENAZAS": "🗣️ УГРОЗЫ",
   "OTRO TIPO DE HECHO": "➡️ ДРУГОЙ ТИП ПРОИСШЕСТВИЯ",

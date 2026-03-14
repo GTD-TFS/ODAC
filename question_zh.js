@@ -5,7 +5,7 @@ const UI_ZH = {
   "EXTRAVÍO/PÉRDIDA": "🧳 遗失 / 丢失",
   "SUSTRACCIÓN": "🕵️ 抢劫 / 盗窃",
   "DAÑOS": "🧱 财产损坏",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ 诈骗 / 网络诈骗",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 诈骗 / 网络诈骗",
   "AGRESIÓN": "👊 攻击 / 伤害",
   "AMENAZAS": "🗣️ 威胁",
   "OTRO TIPO DE HECHO": "➡️ 其他事件类型",
@@ -334,7 +334,11 @@ const GLOBAL_ROUTES = {
     "ESTAFA / ESTAFA INFORMÁTICA": "ESTAFA",
     "AGRESIÓN": "AGRESION_SELECTOR",
     "AMENAZAS": "AMENAZAS_GLOBAL",
-    "OTRO TIPO DE HECHO": "OTRO_TIPO_HECHO"
+    "ALLANAMIENTO / USURPACIÓN": "ALLANAMIENTO_USURPACION",
+    "APROPIACIÓN INDEBIDA": "APROPIACION_INDEBIDA",
+    "COACCIONES": "COACCIONES",
+    "CARÁCTER SEXUAL": "CARACTER_SEXUAL",
+    "DENUNCIA GENÉRICA": "OTROS"
   },
 
   // Entrada secundaria (segunda página de categorías)
@@ -507,7 +511,11 @@ const QUESTION_SETS = {
         "ESTAFA / ESTAFA INFORMÁTICA",
         "AGRESIÓN",
         "AMENAZAS",
-        "OTRO TIPO DE HECHO"
+        "ALLANAMIENTO / USURPACIÓN",
+        "APROPIACIÓN INDEBIDA",
+        "COACCIONES",
+        "CARÁCTER SEXUAL",
+        "DENUNCIA GENÉRICA"
       ]
     }
   ],
