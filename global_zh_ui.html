@@ -1367,6 +1367,34 @@ const OBJETO_TIPO_OPTIONS = [
   "MOCHILA / BOLSO",
   "OTRO"
 ];
+const OBJECT_TYPE_LABELS = {
+  "MÓVIL": { en:"MOBILE PHONE", de:"HANDY", fr:"TÉLÉPHONE PORTABLE", it:"CELLULARE", ru:"МОБИЛЬНЫЙ ТЕЛЕФОН", zh:"手机", ja:"携帯電話" },
+  "CARTERA / MONEDERO": { en:"WALLET / PURSE", de:"GELDBÖRSE / PORTEMONNAIE", fr:"PORTEFEUILLE / PORTE-MONNAIE", it:"PORTAFOGLIO / PORTAMONETE", ru:"КОШЕЛЕК / БУМАЖНИК", zh:"钱包 / 皮夹", ja:"財布 / 小銭入れ" },
+  "DOCUMENTACIÓN": { en:"DOCUMENTS", de:"DOKUMENTE", fr:"DOCUMENTS", it:"DOCUMENTI", ru:"ДОКУМЕНТЫ", zh:"证件", ja:"書類" },
+  "JOYAS": { en:"JEWELRY", de:"SCHMUCK", fr:"BIJOUX", it:"GIOIELLI", ru:"ЮВЕЛИРНЫЕ ИЗДЕЛИЯ", zh:"首饰", ja:"貴金属" },
+  "EFECTIVO": { en:"CASH", de:"BARGELD", fr:"ESPÈCES", it:"CONTANTI", ru:"НАЛИЧНЫЕ", zh:"现金", ja:"現金" },
+  "HERRAMIENTA": { en:"TOOL", de:"WERKZEUG", fr:"OUTIL", it:"ATTREZZO", ru:"ИНСТРУМЕНТ", zh:"工具", ja:"工具" },
+  "BICICLETA": { en:"BICYCLE", de:"FAHRRAD", fr:"VÉLO", it:"BICICLETTA", ru:"ВЕЛОСИПЕД", zh:"自行车", ja:"自転車" },
+  "PATINETE": { en:"SCOOTER", de:"ROLLER", fr:"TROTTINETTE", it:"MONOPATTINO", ru:"САМОКАТ", zh:"滑板车", ja:"キックボード" },
+  "PORTÁTIL / TABLET": { en:"LAPTOP / TABLET", de:"LAPTOP / TABLET", fr:"ORDINATEUR PORTABLE / TABLETTE", it:"PORTATILE / TABLET", ru:"НОУТБУК / ПЛАНШЕТ", zh:"笔记本 / 平板", ja:"ノートPC / タブレット" },
+  "MOCHILA / BOLSO": { en:"BACKPACK / BAG", de:"RUCKSACK / TASCHE", fr:"SAC À DOS / SAC", it:"ZAINO / BORSA", ru:"РЮКЗАК / СУМКА", zh:"背包 / 手提包", ja:"リュック / バッグ" },
+  "OTRO": { en:"OTHER", de:"SONSTIGES", fr:"AUTRE", it:"ALTRO", ru:"ДРУГОЕ", zh:"其他", ja:"その他" },
+  "OBJETO": { en:"ITEM", de:"GEGENSTAND", fr:"OBJET", it:"OGGETTO", ru:"ПРЕДМЕТ", zh:"物品", ja:"物品" }
+};
+
+function objectTypeLabel(value){
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "";
+  const L = (document.documentElement.lang || "en").toLowerCase();
+  const lang = L.startsWith("de") ? "de" :
+               L.startsWith("it") ? "it" :
+               L.startsWith("fr") ? "fr" :
+               L.startsWith("ru") ? "ru" :
+               L.startsWith("zh") ? "zh" :
+               L.startsWith("ja") ? "ja" : "en";
+  return OBJECT_TYPE_LABELS[raw]?.[lang] || trUI(raw);
+}
+
 const AUTOR_SEXO_OPTIONS = ["HOMBRE", "MUJER", "NO DETERMINADO"];
 const AUTOR_EDAD_OPTIONS = ["<20","20-25","25-30","30-40","40-50","50-60",">60"];
 const AUTOR_CONSTITUCION_OPTIONS = ["DELGADA","NORMAL","FUERTE/CORPULENTA","ATLÉTICA","NO DETERMINADA"];
@@ -2253,9 +2281,10 @@ function updateObjsCount(){
 function objectSummaryLabel(o){
   const tipo = String(o.tipo_catalogo || o.tipo || "").trim().toUpperCase();
   if (tipo === "OTRO"){
-    return (o.descripcion || "").trim() || "其他";
+    return (o.descripcion || "").trim() || objectTypeLabel("OTRO");
   }
-  return tipo || (o.descripcion || "").trim() || "物品";
+  if (tipo) return objectTypeLabel(tipo);
+  return (o.descripcion || "").trim() || objectTypeLabel("OBJETO");
 }
 
 function buildObjectsCompactSummary(){
@@ -2343,7 +2372,7 @@ function renderObjs(){
 
     const tipoI = document.createElement("select");
     tipoI.className = "objTipo";
-    tipoI.innerHTML = `<option value=""></option>${OBJETO_TIPO_OPTIONS.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("")}`;
+    tipoI.innerHTML = `<option value=""></option>${OBJETO_TIPO_OPTIONS.map(v=>`<option value="${v}">${objectTypeLabel(v)}</option>`).join("")}`;
     tipoI.value = o.tipo_catalogo || "";
     tipoI.addEventListener("change", ()=>{
       o.tipo_catalogo = tipoI.value;
