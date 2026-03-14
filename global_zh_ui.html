@@ -381,6 +381,11 @@
 .phaseBox p{margin:0;color:var(--muted);font-size:13px}
 .shareActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .shareActions .btn{width:100%}
+.shareActions.secondaryRow{grid-template-columns:1fr}
+.shareBtn{display:flex;align-items:center;justify-content:center;gap:10px}
+.shareIcon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;flex:0 0 22px}
+.shareIcon.whatsapp{background:#25d366;color:#fff;font-weight:900;font-size:13px}
+.shareIcon.email{background:#0a84ff;color:#fff;font-size:13px}
 .codeBadge{display:inline-flex;align-items:center;justify-content:center;min-width:96px;padding:10px 14px;border-radius:999px;border:1px solid rgba(214,176,106,.45);background:rgba(214,176,106,.12);color:var(--label);font-weight:900;letter-spacing:.12em}
 @media(max-width:720px){.shareActions{grid-template-columns:1fr}}
 @media(max-width:720px){.resideChoice{font-size:14px;gap:3px}}
@@ -540,10 +545,11 @@
           <div class="codeBadge" id="reportCodeValue">-----</div>
         </div>
         <div class="shareActions">
-          <button class="btn secondary" id="btnCopyPersonal" type="button"></button>
-          <button class="btn" id="btnShareDevice" type="button"></button>
-          <button class="btn ok" id="btnShareWhatsapp" type="button"></button>
-          <button class="btn ok" id="btnShareEmail" type="button"></button>
+          <button class="btn ok shareBtn" id="btnShareWhatsapp" type="button"></button>
+          <button class="btn shareBtn" id="btnShareEmail" type="button"></button>
+        </div>
+        <div class="shareActions secondaryRow">
+          <button class="btn secondary" id="btnShareDevice" type="button"></button>
         </div>
         <div class="status" id="personalShareStatus"></div>
       </div>
@@ -692,7 +698,7 @@ function uiText(key){
       personal_phase_intro:"Estos datos no se guardan en Firebase. Solo se preparan en su dispositivo para compartirlos por el medio que usted decida.",
       report_code_label:"Código de referencia de la denuncia",
       copy_personal:"Copiar datos",
-      share_device:"Compartir",
+      share_device:"Compartir por otro medio",
       share_whatsapp:"WhatsApp",
       share_email:"Email",
       share_ready:"Datos personales preparados para compartir.",
@@ -737,7 +743,7 @@ function uiText(key){
       personal_phase_intro:"These details are not stored in Firebase. They are only prepared on your device so you can share them by the method you choose.",
       report_code_label:"Report reference code",
       copy_personal:"Copy details",
-      share_device:"Share",
+      share_device:"Share by another method",
       share_whatsapp:"WhatsApp",
       share_email:"Email",
       share_ready:"Personal details ready to share.",
@@ -755,7 +761,7 @@ function uiText(key){
       personal_phase_intro:"Diese Daten werden nicht in Firebase gespeichert. Sie werden nur auf Ihrem Gerät vorbereitet, damit Sie sie auf dem gewünschten Weg senden können.",
       report_code_label:"Referenzcode der Anzeige",
       copy_personal:"Daten kopieren",
-      share_device:"Teilen",
+      share_device:"Anders teilen",
       share_whatsapp:"WhatsApp",
       share_email:"E-Mail",
       share_ready:"Persönliche Daten bereit zum Teilen.",
@@ -773,7 +779,7 @@ function uiText(key){
       personal_phase_intro:"Questi dati non vengono salvati in Firebase. Restano solo sul dispositivo per consentirle di condividerli con il mezzo che preferisce.",
       report_code_label:"Codice di riferimento della denuncia",
       copy_personal:"Copia dati",
-      share_device:"Condividi",
+      share_device:"Condividi con un altro mezzo",
       share_whatsapp:"WhatsApp",
       share_email:"Email",
       share_ready:"Dati personali pronti da condividere.",
@@ -791,7 +797,7 @@ function uiText(key){
       personal_phase_intro:"Ces données ne sont pas stockées dans Firebase. Elles sont seulement préparées sur votre appareil afin que vous puissiez les partager par le moyen de votre choix.",
       report_code_label:"Code de référence de la déclaration",
       copy_personal:"Copier les données",
-      share_device:"Partager",
+      share_device:"Partager autrement",
       share_whatsapp:"WhatsApp",
       share_email:"Email",
       share_ready:"Données personnelles prêtes à être partagées.",
@@ -809,7 +815,7 @@ function uiText(key){
       personal_phase_intro:"Эти данные не сохраняются в Firebase. Они подготавливаются только на вашем устройстве, чтобы вы могли отправить их удобным для вас способом.",
       report_code_label:"Код обращения",
       copy_personal:"Копировать данные",
-      share_device:"Поделиться",
+      share_device:"Поделиться другим способом",
       share_whatsapp:"WhatsApp",
       share_email:"Email",
       share_ready:"Личные данные готовы к отправке.",
@@ -827,7 +833,7 @@ function uiText(key){
       personal_phase_intro:"这些资料不会保存到 Firebase，只会在您的设备上准备好，供您按自己选择的方式分享。",
       report_code_label:"报案参考编号",
       copy_personal:"复制资料",
-      share_device:"分享",
+      share_device:"通过其他方式分享",
       share_whatsapp:"WhatsApp",
       share_email:"电子邮件",
       share_ready:"个人资料已准备好分享。",
@@ -872,7 +878,7 @@ function uiText(key){
       personal_phase_intro:"これらの情報は Firebase には保存されません。送信したい方法で共有できるよう、お使いの端末上でのみ準備されます。",
       report_code_label:"申告参照コード",
       copy_personal:"情報をコピー",
-      share_device:"共有",
+      share_device:"別の方法で共有",
       share_whatsapp:"WhatsApp",
       share_email:"メール",
       share_ready:"個人情報を共有できる状態になりました。",
@@ -1344,6 +1350,7 @@ let reportCode = "";
 let flowPhase = "hechos";
 let tokenSessionExpiryAt = null;
 let tokenSessionCreatedAt = null;
+let shareTargetsPromise = null;
 
 function computeDraftFingerprint(payload){
   try{
@@ -2414,18 +2421,35 @@ function refreshPersonalPhaseUI(){
   const intro = $("personalPhaseIntro");
   const codeLabel = $("reportCodeLabel");
   const codeValue = $("reportCodeValue");
-  const copyBtn = $("btnCopyPersonal");
   const shareBtn = $("btnShareDevice");
   const waBtn = $("btnShareWhatsapp");
   const mailBtn = $("btnShareEmail");
-  if (title) title.textContent = uiText("personal_phase_title");
-  if (intro) intro.textContent = uiText("personal_phase_intro");
-  if (codeLabel) codeLabel.textContent = uiText("report_code_label");
-  if (codeValue) codeValue.textContent = reportCode || "-----";
-  if (copyBtn) copyBtn.textContent = uiText("copy_personal");
+  if (title) title.style.display = "none";
+  if (intro) intro.style.display = "none";
+  if (codeLabel) codeLabel.style.display = "none";
+  if (codeValue) codeValue.style.display = "none";
   if (shareBtn) shareBtn.textContent = uiText("share_device");
-  if (waBtn) waBtn.textContent = uiText("share_whatsapp");
-  if (mailBtn) mailBtn.textContent = uiText("share_email");
+  if (waBtn) waBtn.innerHTML = `<span class="shareIcon whatsapp">W</span><span>${uiText("share_whatsapp")}</span>`;
+  if (mailBtn) mailBtn.innerHTML = `<span class="shareIcon email">✉</span><span>${uiText("share_email")}</span>`;
+}
+
+async function getShareTargets(){
+  if (!shareTargetsPromise){
+    shareTargetsPromise = (async ()=>{
+      if (!token) return {};
+      try{
+        const snap = await getDoc(doc(db, "tokenSessions", token));
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        return {
+          whatsapp: String(data.shareWhatsappTarget || "").trim(),
+          email: String(data.shareEmailTarget || "").trim()
+        };
+      }catch(_){
+        return {};
+      }
+    })();
+  }
+  return shareTargetsPromise;
 }
 
 function setPersonalShareStatus(text){
@@ -2509,12 +2533,7 @@ async function sharePersonalData(mode){
   const text = buildPersonalShareText();
   persistLocalState("FINALIZADA");
   try{
-    if (mode === "copy"){
-      await navigator.clipboard.writeText(text);
-      setPersonalShareStatus(uiText("share_copied"));
-      showToast(uiText("share_copied"));
-      return;
-    }
+    const targets = await getShareTargets();
     if (mode === "device"){
       if (!navigator.share) throw new Error(uiText("share_unavailable"));
       await navigator.share({ title: uiText("personal_title"), text });
@@ -2522,14 +2541,17 @@ async function sharePersonalData(mode){
       return;
     }
     if (mode === "whatsapp"){
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      const to = String(targets.whatsapp || "").replace(/[^\d]/g, "");
+      const base = to ? `https://wa.me/${to}` : "https://wa.me/";
+      window.open(`${base}?text=${encodeURIComponent(text)}`, "_blank");
       setPersonalShareStatus(uiText("share_ready"));
       return;
     }
     if (mode === "email"){
       const subject = encodeURIComponent(`${uiText("personal_title")}${reportCode ? " · " + reportCode : ""}`);
       const body = encodeURIComponent(text);
-      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      const to = encodeURIComponent(String(targets.email || "").trim());
+      window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
       setPersonalShareStatus(uiText("share_ready"));
     }
   }catch(err){
