@@ -99,6 +99,7 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:100%}
   .grid > *{min-width:0}
   @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .fhlPanel{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
   .fhlGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:14px;row-gap:20px;width:100%;max-width:100%;align-items:start}
   .fhlField{display:flex;flex-direction:column;align-items:center;min-width:0}
   .fhlField label,.fhlPlace label{text-align:center;width:100%}
@@ -109,9 +110,11 @@
   .fhlMapRow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:4px}
   .fhlMapInfo,.fhlMapLegend{text-align:center}
   @media(max-width:720px){
+    .fhlPanel{padding-bottom:calc(128px + env(safe-area-inset-bottom))}
     .fhlGrid{grid-template-columns:1fr;row-gap:22px}
     .fhlFieldDate,.fhlFieldTime{width:min(100%,260px)}
-    .fhlPlace{margin-top:8px}
+    .fhlPlace{margin-top:8px;gap:8px}
+    .fhlMapRow{gap:10px;margin-top:6px}
   }
 
   .h1{font-weight:900;font-size:18px;margin:0;text-align:center;width:100%}
@@ -707,7 +710,7 @@
       <div id="authorsList"></div>
     </div>
     <div class="modalDock">
-      <button class="btn secondary" id="btnAddAuthor" type="button">+</button>
+      <button class="btn secondary" id="btnAddAuthor" type="button">AGGIUNGI AUTORE</button>
       <button class="btn ok" id="btnSaveAuthors" type="button">SALVA</button>
     </div>
   </div>
@@ -1699,7 +1702,7 @@ function makeStepEl(q){
 
   if (q.type === "select"){
     const panel = document.createElement("div");
-    panel.className = "stepPanel";
+    panel.className = "stepPanel fhlPanel";
 
     const box = document.createElement("div");
     box.className = "choices pills";
