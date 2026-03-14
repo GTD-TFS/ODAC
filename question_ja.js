@@ -1315,6 +1315,9 @@ Object.assign(UI_JA, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "有効な居住国を選択してください（候補ボタンを使用）。",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "居住国がスペインの場合は県と市区町村を選択してください。",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "テネリフェ居住でない場合は一時滞在先住所と帰着予定日を入力してください。",
+  "Web, app, teléfono, comercio, municipio...": "ウェブ、アプリ、電話、店舗、市区町村...",
+  "Calle / domicilio / trabajo / municipio": "通り / 住所 / 勤務先 / 市",
+  "Domicilio / local / nave / municipio": "住所 / 店舗 / 倉庫 / 市",
 });
 
 window.QUESTION_JA = { UI_EN: UI_JA, UI_JA, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

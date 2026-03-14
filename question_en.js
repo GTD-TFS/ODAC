@@ -1379,6 +1379,9 @@ Object.assign(UI_EN, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Select a valid COUNTRY of residence (use the pills).",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "If residence country is SPAIN, select PROVINCE and MUNICIPALITY.",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "If you do not reside in Tenerife, complete temporary address and return date.",
+  "Web, app, teléfono, comercio, municipio...": "Web, app, phone, business, city...",
+  "Calle / domicilio / trabajo / municipio": "Street / home / workplace / city",
+  "Domicilio / local / nave / municipio": "Home / premises / warehouse / city",
 });
 
 window.QUESTION_EN = { UI_EN, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

@@ -1524,6 +1524,9 @@ Object.assign(UI_RU, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Выберите корректную страну проживания (используйте варианты).",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "Если место проживания в Испании, выберите провинцию и муниципалитет.",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "Если вы не проживаете на Тенерифе, укажите временный адрес и дату возвращения.",
+  "Web, app, teléfono, comercio, municipio...": "Сайт, приложение, телефон, магазин, муниципалитет...",
+  "Calle / domicilio / trabajo / municipio": "Улица / дом / работа / муниципалитет",
+  "Domicilio / local / nave / municipio": "Жилище / помещение / склад / муниципалитет",
 });
 
 window.QUESTION_RU = { UI_EN: UI_RU, UI_RU, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

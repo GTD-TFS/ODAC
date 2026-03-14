@@ -1227,8 +1227,8 @@
 
     function mapPredenunciaDoc(d) {
       const x = d.data() || {};
-      const codigo = (x.codigo || x.reportCode || d.id || "").toString().trim();
-      const labelPublico = (x.label_publico || x.labelPublico || codigo || d.id).toString().trim() || d.id;
+      const labelPublico = (x.label_publico || x.labelPublico || x.reportCode || x.codigo || "").toString().trim();
+      const codigo = (labelPublico || x.codigo || x.reportCode || "").toString().trim();
 
       return {
         id: d.id,
@@ -1252,7 +1252,7 @@
       if (!nextSelected) return;
       state.selected = nextSelected;
       state.denuncias = state.denuncias.map((item) => item.id === nextSelected.id ? nextSelected : item);
-      $("selectedRef").textContent = nextSelected.codigo || nextSelected.labelPublico || nextSelected.id;
+      $("selectedRef").textContent = nextSelected.labelPublico || nextSelected.codigo || nextSelected.id;
       renderSelectedIntoArea();
       refreshActions();
       if (state.mode === "predenuncias") renderDenuncias();
@@ -1560,7 +1560,7 @@
         const left = document.createElement("div");
         left.className = "left";
         const icon = "🧾";
-        const titulo = d.codigo || d.labelPublico || d.id;
+        const titulo = d.labelPublico || d.codigo || d.id;
         const estadoTxt = d.estado === "FINALIZADA" ? "FINALIZADA" : "INICIADA";
         const estadoColor = d.estado === "FINALIZADA" ? "#22c55e" : "#f59e0b";
         left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)}</div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt} · ${escapeHtml(d.tipo || "")}</div>`;
@@ -1614,7 +1614,7 @@
       startSelectedPredListener(d.id);
       state.dirtyDoc = false;
 
-      $("selectedRef").textContent = d.codigo || d.labelPublico || d.id;
+      $("selectedRef").textContent = d.labelPublico || d.codigo || d.id;
       $("workStatus").textContent = "";
       renderSelectedIntoArea();
       refreshActions();

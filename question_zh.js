@@ -1318,6 +1318,9 @@ Object.assign(UI_ZH, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "请选择有效的居住国家（使用下方选项）。",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "若居住地在西班牙，请选择省和市镇。",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "若不居住在特内里费，请填写临时住址和预计返程日期。",
+  "Web, app, teléfono, comercio, municipio...": "网页、应用、电话、商铺、城市...",
+  "Calle / domicilio / trabajo / municipio": "街道 / 住址 / 工作地点 / 城市",
+  "Domicilio / local / nave / municipio": "住址 / 店铺 / 仓库 / 城市",
 });
 
 window.QUESTION_ZH = { UI_EN: UI_ZH, UI_ZH, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

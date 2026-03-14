@@ -1534,6 +1534,9 @@ Object.assign(UI_DE, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Wählen Sie ein gültiges Wohnsitzland (über die Chips).",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "Wenn der Wohnsitz in Spanien ist, wählen Sie Provinz und Gemeinde.",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "Wenn Sie nicht auf Teneriffa wohnen, geben Sie vorübergehende Adresse und Rückreisedatum an.",
+  "Web, app, teléfono, comercio, municipio...": "Web, App, Telefon, Geschäft, Gemeinde...",
+  "Calle / domicilio / trabajo / municipio": "Straße / Wohnung / Arbeitsplatz / Gemeinde",
+  "Domicilio / local / nave / municipio": "Wohnung / Lokal / Halle / Gemeinde",
 });
 
 window.QUESTION_DE = { UI_EN: UI_DE, UI_DE, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };
