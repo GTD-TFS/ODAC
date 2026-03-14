@@ -198,11 +198,14 @@
   .modal{
     width:min(720px,96vw);
     max-height:calc(100vh - 36px);
-    overflow:auto;
+    overflow:hidden;
     background:rgba(17,28,51,.96);
     border:1px solid var(--edge);
     border-radius:18px;
     padding:14px;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
   }
 
   /* Modal en móvil: pantalla completa y sin “márgenes” raros */
@@ -264,6 +267,38 @@
   }
   .modalHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .modalTitle{font-weight:900}
+  .objSummary{
+    width:100%;
+    margin-top:10px;
+    padding:10px 12px;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+    font-size:12px;
+    line-height:1.4;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .objSummaryItem{
+    padding:8px 10px;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
+  }
+  #objsList{
+    margin-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+    min-height:0;
+    overflow:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-right:2px;
+    padding-bottom:6px;
+  }
 
   .btn.small{padding:8px 10px;border-radius:10px}
 
@@ -623,10 +658,10 @@
     </div>
 
 
-    <div id="objsList" style="margin-top:10px;display:flex;flex-direction:column;gap:10px"></div>
+    <div id="objsList"></div>
 
     <div class="row" style="justify-content:space-between;margin-top:12px">
-      <button class="btn secondary" id="btnAddObj" type="button">+</button>
+      <button class="btn secondary" id="btnAddObj" type="button">NOUVEL OBJET</button>
       <button class="btn ok" id="btnSaveObjs" type="button">ENREGISTRER</button>
     </div>
   </div>
@@ -1841,6 +1876,8 @@ function makeStepEl(q){
   }
 
   if (q.type === "objects"){
+    const box = document.createElement("div");
+    box.style.width = "100%";
     const row = document.createElement("div");
     row.className = "row";
     row.style.justifyContent = "space-between";
@@ -1854,12 +1891,20 @@ function makeStepEl(q){
 
     const c = document.createElement("div");
     c.className = "muted";
-    c.id = "q_objCount";
+    c.dataset.objCount = "true";
     c.textContent = String(objetosState.length);
 
     row.appendChild(b);
     row.appendChild(c);
-    wrap.appendChild(row);
+    box.appendChild(row);
+
+    const summary = document.createElement("div");
+    summary.className = "muted objSummary";
+    summary.dataset.objSummary = "true";
+    renderObjectsSummaryInto(summary);
+    box.appendChild(summary);
+
+    wrap.appendChild(box);
 
   }
   if (q.type === "authors"){
@@ -2164,8 +2209,62 @@ function updateObjsCount(){
   const n = objetosState.length;
   const el = $("objsCount");
   if (el) el.textContent = String(n);
-  const el2 = $("q_objCount");
-  if (el2) el2.textContent = String(n);
+  document.querySelectorAll('[data-obj-count="true"]').forEach(node => {
+    node.textContent = String(n);
+  });
+  document.querySelectorAll('[data-obj-summary="true"]').forEach(node => {
+    renderObjectsSummaryInto(node);
+  });
+}
+
+function objectSummaryLabel(o){
+  const tipo = String(o.tipo_catalogo || o.tipo || "").trim().toUpperCase();
+  if (tipo === "OTRO"){
+    return (o.descripcion || "").trim() || "AUTRE";
+  }
+  return tipo || (o.descripcion || "").trim() || "OBJET";
+}
+
+function buildObjectsCompactSummary(){
+  return objetosState
+    .map(o => ({ ...o }))
+    .filter(o => {
+      syncObjectTipo(o);
+      return (o.tipo || "").trim() || (o.descripcion || "").trim() || (o.cantidad || "").trim();
+    })
+    .map(o => {
+      const cantidadRaw = String(o.cantidad || "").trim();
+      const cantidadNum = Number(cantidadRaw);
+      const cantidad = cantidadRaw && Number.isFinite(cantidadNum) && cantidadNum > 0 ? cantidadRaw : "1";
+      return `${cantidad} x ${objectSummaryLabel(o)}`;
+    });
+}
+
+function renderObjectsSummaryInto(node){
+  if (!node) return;
+  const items = buildObjectsCompactSummary();
+  node.innerHTML = "";
+  if (!items.length){
+    node.textContent = "Aucun objet ajoute.";
+    return;
+  }
+  items.forEach(text => {
+    const item = document.createElement("div");
+    item.className = "objSummaryItem";
+    item.textContent = text;
+    node.appendChild(item);
+  });
+}
+
+function keepObjectFieldInView(target){
+  const list = $("objsList");
+  if (!list || !target) return;
+  const card = target.closest(".objCard") || target;
+  requestAnimationFrame(()=>{
+    try{
+      card.scrollIntoView({ block:"nearest", inline:"nearest" });
+    }catch(_){}
+  });
 }
 
 function openObjs(noValueMode = false){
@@ -2216,6 +2315,7 @@ function renderObjs(){
       syncObjectTipo(o);
       renderObjs();
     });
+    tipoI.addEventListener("focus", ()=> keepObjectFieldInView(tipoI));
 
     const cantI = document.createElement("input");
     cantI.className = "objCant";
@@ -2223,6 +2323,7 @@ function renderObjs(){
     cantI.inputMode = "numeric";
     cantI.value = o.cantidad || "";
     cantI.addEventListener("input", ()=>{ o.cantidad = cantI.value; });
+    cantI.addEventListener("focus", ()=> keepObjectFieldInView(cantI));
 
     const valI = document.createElement("input");
     valI.className = "objVal";
@@ -2230,21 +2331,25 @@ function renderObjs(){
     valI.inputMode = "numeric";
     valI.value = o.valor_total_eur || "";
     valI.addEventListener("input", ()=>{ o.valor_total_eur = valI.value; });
+    valI.addEventListener("focus", ()=> keepObjectFieldInView(valI));
     const descI = document.createElement("input");
     descI.style.gridColumn = "1/-1";
     descI.placeholder = uiText("object_description_placeholder");
     descI.value = o.descripcion || "";
     descI.addEventListener("input", ()=>{ o.descripcion = descI.value; syncObjectTipo(o); });
+    descI.addEventListener("focus", ()=> keepObjectFieldInView(descI));
     const serialI = document.createElement("input");
     serialI.style.gridColumn = "1/-1";
     serialI.placeholder = uiText("serial_placeholder");
     serialI.value = o.numero_serie_imei || "";
     serialI.addEventListener("input", ()=>{ o.numero_serie_imei = serialI.value; });
+    serialI.addEventListener("focus", ()=> keepObjectFieldInView(serialI));
     const marcaI = document.createElement("input");
     marcaI.style.gridColumn = "1/-1";
     marcaI.placeholder = uiText("brand_placeholder");
     marcaI.value = o.marca_modelo || "";
     marcaI.addEventListener("input", ()=>{ o.marca_modelo = marcaI.value; syncObjectTipo(o); });
+    marcaI.addEventListener("focus", ()=> keepObjectFieldInView(marcaI));
 
     const del = document.createElement("button");
     del.className = "btn danger objDel";
@@ -2291,6 +2396,11 @@ $("btnAddObj").addEventListener("click", ()=>{
     : { tipo_catalogo:"", tipo:"", cantidad:"", valor_total_eur:"", descripcion:"", numero_serie_imei:"", marca_modelo:"" });
   renderObjs();
   updateObjsCount();
+  requestAnimationFrame(()=>{
+    const cards = $("objsList")?.querySelectorAll(".objCard");
+    const last = cards && cards[cards.length - 1];
+    if (last) keepObjectFieldInView(last);
+  });
 });
 
 $("btnSaveObjs").addEventListener("click", ()=>{

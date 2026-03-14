@@ -275,6 +275,15 @@
     background:rgba(255,255,255,.03);
     font-size:12px;
     line-height:1.4;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .objSummaryItem{
+    padding:8px 10px;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
   }
   #objsList{
     margin-top:10px;
@@ -653,7 +662,7 @@
     <div id="objsList"></div>
 
     <div class="row" style="justify-content:space-between;margin-top:12px">
-      <button class="btn secondary" id="btnAddObj" type="button">+</button>
+      <button class="btn secondary" id="btnAddObj" type="button">NUEVO OBJETO</button>
       <button class="btn ok" id="btnSaveObjs" type="button">GUARDAR</button>
     </div>
   </div>
@@ -1856,7 +1865,7 @@ function makeStepEl(q){
     const summary = document.createElement("div");
     summary.className = "muted objSummary";
     summary.dataset.objSummary = "true";
-    summary.textContent = buildObjectsCompactSummary() || "Sin objetos añadidos.";
+    renderObjectsSummaryInto(summary);
     box.appendChild(summary);
 
     wrap.appendChild(box);
@@ -2157,9 +2166,8 @@ function updateObjsCount(){
   document.querySelectorAll('[data-obj-count="true"]').forEach(node => {
     node.textContent = String(n);
   });
-  const summary = buildObjectsCompactSummary();
   document.querySelectorAll('[data-obj-summary="true"]').forEach(node => {
-    node.textContent = summary || "Sin objetos añadidos.";
+    renderObjectsSummaryInto(node);
   });
 }
 
@@ -2172,7 +2180,7 @@ function objectSummaryLabel(o){
 }
 
 function buildObjectsCompactSummary(){
-  const items = objetosState
+  return objetosState
     .map(o => ({ ...o }))
     .filter(o => {
       syncObjectTipo(o);
@@ -2184,7 +2192,22 @@ function buildObjectsCompactSummary(){
       const cantidad = cantidadRaw && Number.isFinite(cantidadNum) && cantidadNum > 0 ? cantidadRaw : "1";
       return `${cantidad} x ${objectSummaryLabel(o)}`;
     });
-  return items.join(" · ");
+}
+
+function renderObjectsSummaryInto(node){
+  if (!node) return;
+  const items = buildObjectsCompactSummary();
+  node.innerHTML = "";
+  if (!items.length){
+    node.textContent = "Sin objetos añadidos.";
+    return;
+  }
+  items.forEach(text => {
+    const item = document.createElement("div");
+    item.className = "objSummaryItem";
+    item.textContent = text;
+    node.appendChild(item);
+  });
 }
 
 function keepObjectFieldInView(target){
@@ -2246,6 +2269,7 @@ function renderObjs(){
       syncObjectTipo(o);
       renderObjs();
     });
+    tipoI.addEventListener("focus", ()=> keepObjectFieldInView(tipoI));
 
     const cantI = document.createElement("input");
     cantI.className = "objCant";
