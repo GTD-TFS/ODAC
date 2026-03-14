@@ -99,6 +99,20 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:100%}
   .grid > *{min-width:0}
   @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .fhlGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:14px;row-gap:20px;width:100%;max-width:100%;align-items:start}
+  .fhlField{display:flex;flex-direction:column;align-items:center;min-width:0}
+  .fhlField label,.fhlPlace label{text-align:center;width:100%}
+  .fhlFieldDate,.fhlFieldTime{justify-self:center;width:min(100%,220px)}
+  .fhlField input,.fhlPlace input{font-size:16px;text-align:center}
+  .fhlHint{text-align:center;font-size:11px;margin-top:6px}
+  .fhlPlace{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .fhlMapRow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:4px}
+  .fhlMapInfo,.fhlMapLegend{text-align:center}
+  @media(max-width:720px){
+    .fhlGrid{grid-template-columns:1fr;row-gap:22px}
+    .fhlFieldDate,.fhlFieldTime{width:min(100%,260px)}
+    .fhlPlace{margin-top:8px}
+  }
 
   .h1{font-weight:900;font-size:18px;margin:0;text-align:center;width:100%}
   .muted{color:var(--muted);font-size:12px}
@@ -1627,10 +1641,11 @@ function makeStepEl(q){
     panel.className = "stepPanel";
 
     const g = document.createElement("div");
-    g.className = "grid";
+    g.className = "fhlGrid";
     const isInterval = (q.interval === true) || (q.intervalo === true);
 
     const w1 = document.createElement("div");
+    w1.className = "fhlField fhlFieldDate";
     const l1 = document.createElement("label");
     l1.textContent = "Дата";
     const i1 = document.createElement("input");
@@ -1648,6 +1663,7 @@ function makeStepEl(q){
     if (isInterval){
       // Dos campos independientes (DESDE / HASTA) para que siempre se vean.
       w2 = document.createElement("div");
+      w2.className = "fhlField fhlFieldTime";
       const l2a = document.createElement("label");
       l2a.textContent = "Время (с)";
       const i2a = document.createElement("input");
@@ -1662,6 +1678,7 @@ function makeStepEl(q){
       w2.appendChild(i2a);
 
       w2b = document.createElement("div");
+      w2b.className = "fhlField fhlFieldTime";
       const l2b = document.createElement("label");
       l2b.textContent = "Время (до)";
       const i2b = document.createElement("input");
@@ -1677,6 +1694,7 @@ function makeStepEl(q){
 
     } else {
       w2 = document.createElement("div");
+      w2.className = "fhlField fhlFieldTime";
       const l2 = document.createElement("label");
       l2.textContent = "Время";
       const i2 = document.createElement("input");
@@ -1690,10 +1708,15 @@ function makeStepEl(q){
       });
       w2.appendChild(l2);
       w2.appendChild(i2);
+      const h2 = document.createElement("div");
+      h2.className = "muted fhlHint";
+      h2.textContent = "Если это происходило в течение периода, укажите ниже время окончания";
+      w2.appendChild(h2);
 
       w2b = document.createElement("div");
+      w2b.className = "fhlField fhlFieldTime";
       const l2b = document.createElement("label");
-      l2b.textContent = "Время (до, если это происходило в течение периода)";
+      l2b.textContent = "Время окончания";
       const i2b = document.createElement("input");
       i2b.type = "time";
       i2b.id = "q_hora_hasta_opt";
@@ -1707,7 +1730,7 @@ function makeStepEl(q){
     }
 
     const w3 = document.createElement("div");
-    w3.style.gridColumn = "1/-1";
+    w3.className = "fhlPlace";
     const l3 = document.createElement("label");
     l3.textContent = "Место";
     const i3 = document.createElement("input");
@@ -1718,8 +1741,7 @@ function makeStepEl(q){
     i3.addEventListener("input", ()=>{ wiz.st.lugar = i3.value; });
 
     const mapRow = document.createElement("div");
-    mapRow.className = "row";
-    mapRow.style.marginTop = "8px";
+    mapRow.className = "fhlMapRow";
 
     const mapBtn = document.createElement("button");
     mapBtn.type = "button";
@@ -1727,13 +1749,12 @@ function makeStepEl(q){
     mapBtn.textContent = mapText("pick_on_map");
 
     const mapInfo = document.createElement("div");
-    mapInfo.className = "muted";
+    mapInfo.className = "muted fhlMapInfo";
     mapInfo.style.fontSize = "11px";
 
     const mapLegend = document.createElement("div");
-    mapLegend.className = "muted";
+    mapLegend.className = "muted fhlMapLegend";
     mapLegend.style.fontSize = "11px";
-    mapLegend.style.marginTop = "6px";
     mapLegend.textContent = mapText("map_legend");
 
     const paintCoords = ()=>{
