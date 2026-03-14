@@ -645,6 +645,7 @@
 })();
 </script>
 <script src="./map_picker.js"></script>
+<script src="./speech_to_text.js"></script>
 
 <script type="module">
 import { db, serverTimestamp } from "./firebase.js";
@@ -1779,6 +1780,7 @@ function makeStepEl(q){
     if (q.key === "resumen") ta.style.minHeight = "260px";
     ta.addEventListener("input", ()=>{ wiz.st[q.key] = ta.value; });
     wrap.appendChild(ta);
+    if (q.key === "resumen") window.DenupolSpeechToText?.attach({ container: wrap, textarea: ta, lang: document.documentElement.lang });
     inputEl = ta;
   }
 
@@ -1902,6 +1904,7 @@ function makeStepEl(q){
 }
 
 function renderWizard(){
+  window.DenupolSpeechToText?.stop({ abort: true, immediate: true });
   const dyn = $("dynSteps");
   dyn.innerHTML = "";
 
