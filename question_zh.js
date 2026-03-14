@@ -5,7 +5,7 @@ const UI_ZH = {
   "EXTRAVÍO/PÉRDIDA": "🧳 遗失 / 丢失",
   "SUSTRACCIÓN": "🕵️ 抢劫 / 盗窃",
   "DAÑOS": "🧱 财产损坏",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 诈骗 / 网络诈骗",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ 诈骗 / 网络诈骗",
   "AGRESIÓN": "👊 攻击 / 伤害",
   "AMENAZAS": "🗣️ 威胁",
   "OTRO TIPO DE HECHO": "➡️ 其他事件类型",
@@ -137,6 +137,7 @@ const UI_ZH = {
   "FECHA, HORA Y LUGAR DEL EXTRAVÍO": "遗失的日期、时间和地点",
   "OBJETOS EXTRAVIADOS": "遗失物品",
   "CIRCUNSTANCIAS DEL EXTRAVÍO/PÉRDIDA": "遗失 / 丢失经过",
+  "DETALLE ADICIONAL (OPCIONAL)": "补充说明（可选）",
   "¿SE PRODUJO SUSTRACCIÓN DE OBJETOS?": "是否有物品被盗？",
   "OBJETOS AFECTADOS/SUSTRAÍDOS": "受影响/被盗物品",
   "¿HAY CÁMARAS DE SEGURIDAD?": "是否有监控摄像头？",
@@ -333,11 +334,7 @@ const GLOBAL_ROUTES = {
     "ESTAFA / ESTAFA INFORMÁTICA": "ESTAFA",
     "AGRESIÓN": "AGRESION_SELECTOR",
     "AMENAZAS": "AMENAZAS_GLOBAL",
-    "ALLANAMIENTO / USURPACIÓN": "ALLANAMIENTO_USURPACION",
-    "APROPIACIÓN INDEBIDA": "APROPIACION_INDEBIDA",
-    "COACCIONES": "COACCIONES",
-    "CARÁCTER SEXUAL": "CARACTER_SEXUAL",
-    "DENUNCIA GENÉRICA": "OTROS"
+    "OTRO TIPO DE HECHO": "OTRO_TIPO_HECHO"
   },
 
   // Entrada secundaria (segunda página de categorías)
@@ -509,11 +506,7 @@ const QUESTION_SETS = {
         "ESTAFA / ESTAFA INFORMÁTICA",
         "AGRESIÓN",
         "AMENAZAS",
-        "ALLANAMIENTO / USURPACIÓN",
-        "APROPIACIÓN INDEBIDA",
-        "COACCIONES",
-        "CARÁCTER SEXUAL",
-        "DENUNCIA GENÉRICA"
+        "OTRO TIPO DE HECHO"
       ]
     }
   ],
@@ -580,8 +573,7 @@ const QUESTION_SETS = {
         "SI, FORCEJEO O AGRESION",
         "SI, INTIMIDACION SIN CONTACTO"
       ],
-      when: (st) => st.calidad_denunciante === "PERJUDICADO"
-    },
+      },
 
     {
       key: "lesiones",
@@ -617,15 +609,7 @@ const QUESTION_SETS = {
     {
       key: "tipo_intimidacion",
       title: "TIPO DE INTIMIDACIÓN",
-      type: "select",
-      options: [
-        "VERBAL",
-        "GESTUAL",
-        "ARMA BLANCA",
-        "ARMA DE FUEGO",
-        "OTRO OBJETO PELIGROSO",
-        "SIN INTIMIDACIÓN"
-      ],
+      type: "text",
       when: (st) =>
         st.interaccion_autor === "SI, INTIMIDACION SIN CONTACTO"
     },
@@ -646,7 +630,7 @@ const QUESTION_SETS = {
 
     {
       key: "resumen",
-      title:"BREVE RESUMEN DE LOS HECHOS",
+      title: "RESUMEN DE LOS HECHOS",
       type: "textarea",
       max: 900
     },
@@ -679,13 +663,17 @@ const QUESTION_SETS = {
     { key:"interaccion_autor", title:"¿INTERACCION CON EL AUTOR?", type:"select", options:[
       "NO",
       "SI, COMUNICACION",
-      "SI, FORCEJEO O AGRESION"
+      "SI, FORCEJEO O AGRESION",
+      "SI, INTIMIDACION SIN CONTACTO"
     ]},
     { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NO","SI"],
       when:(st)=> (st.interaccion_autor === "SI, FORCEJEO O AGRESION")
     },
     { key:"parte_medico", title:"¿APORTA INFORME MEDICO?", type:"select", options:["NO","SI"],
       when:(st)=> (st.interaccion_autor === "SI, FORCEJEO O AGRESION" && st.lesiones === "SI")
+    },
+    { key:"tipo_intimidacion", title:"TIPO DE INTIMIDACIÓN", type:"text",
+      when:(st)=> (st.interaccion_autor === "SI, INTIMIDACION SIN CONTACTO")
     },
     { key:"autor_retenido", title:"¿AUTOR RETENIDO EN EL LUGAR?", type:"select", options:["SI","NO"] },
     { key:"camaras", title:"¿HAY CAMARAS DE SEGURIDAD?", type:"select", options:[
@@ -705,6 +693,9 @@ const QUESTION_SETS = {
       "ESTANCO / LOTERÍA",
       "OTRO"
     ]},
+    { key:"tipo_establecimiento_otro", title:"ESPECIFIQUE OTRO TIPO DE ESTABLECIMIENTO", type:"text",
+      when:(st)=> (st.tipo_establecimiento === "OTRO")
+    },
     { key:"zona_objetivo", title:"ZONA DEL ESTABLECIMIENTO", type:"select", options:[
       "LÍNEA DE CAJA",
       "MOSTRADOR",
@@ -713,6 +704,9 @@ const QUESTION_SETS = {
       "TERRAZA / EXTERIOR",
       "OTRA"
     ]},
+    { key:"zona_objetivo_otra", title:"ESPECIFIQUE OTRA ZONA DEL ESTABLECIMIENTO", type:"text",
+      when:(st)=> (st.zona_objetivo === "OTRA")
+    },
     { key:"objetos", title:"OBJETOS SUSTRAIDOS", type:"objects" },
     { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 }
   ],
@@ -732,7 +726,7 @@ const QUESTION_SETS = {
       "DESCUBRIMIENTO POSTERIOR AL HECHO",
       "TESTIGO DE LOS HECHOS"
     ],
-      when:(st)=> (st.calidad_denunciante !== "TESTIGO")
+      when:(st)=> (st.calidad_denunciante === "PERJUDICADO")
     },
 
     { key:"fhl", title:"FECHA, INTERVALO HORARIO Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Domicilio / establecimiento / municipio", interval:true },
@@ -1193,11 +1187,20 @@ const QUESTION_SETS = {
   "ESTAFA": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","REPRESENTANTE LEGAL","TESTIGO"] },
     { key:"subtipo_estafa", title:"SUBTIPO DE ESTAFA", type:"select", options:["BANCARIA","BIZUM","TARJETA","PHISHING","COMPRA/VENTA","SUPLANTACIÓN","OTRA"] },
+    { key:"subtipo_estafa_otra", title:"ESPECIFIQUE OTRO SUBTIPO DE ESTAFA", type:"text",
+      when:(st)=> (st.subtipo_estafa === "OTRA")
+    },
     { key:"fhl", title:"FECHA, HORA Y LUGAR/CANAL DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Web, app, teléfono, comercio, municipio..." },
     { key:"estafa_transaccion", title:"OPERATIVA ECONÓMICA", type:"group",
       items:[
         { key:"canal_contacto", title:"CANAL DE CONTACTO", type:"select", options:["TELÉFONO","SMS","EMAIL","WEB","APP","RRSS","MENSAJERÍA","OTRO"] },
+        { key:"canal_contacto_otro", title:"ESPECIFIQUE OTRO CANAL DE CONTACTO", type:"text",
+          when:(st)=> (st.canal_contacto === "OTRO")
+        },
         { key:"instrumento_pago", title:"INSTRUMENTO DE PAGO", type:"select", options:["TRANSFERENCIA","TARJETA","BIZUM","EFECTIVO","CRIPTOMONEDA","OTRO"] },
+        { key:"instrumento_pago_otro", title:"ESPECIFIQUE OTRO INSTRUMENTO DE PAGO", type:"text",
+          when:(st)=> (st.instrumento_pago === "OTRO")
+        },
         { key:"importe_total_eur", title:"IMPORTE TOTAL ESTIMADO (€)", type:"text", placeholder:"Ej.: 1250" },
         { key:"n_operaciones", title:"NÚMERO APROXIMADO DE OPERACIONES", type:"text", placeholder:"Ej.: 3" }
       ]
@@ -1206,10 +1209,10 @@ const QUESTION_SETS = {
       items:[
         { key:"entidad_bancaria", title:"ENTIDAD BANCARIA (SI APLICA)", type:"text", placeholder:"Ej.: Banco X" },
         { key:"identificadores_estafa", title:"IDENTIFICADORES RELACIONADOS", type:"text", placeholder:"IBAN, teléfono, email, URL, usuario...", fullRow:true },
-        { key:"evidencias_estafa", title:"EVIDENCIAS DISPONIBLES", type:"select", options:["CAPTURAS","JUSTIFICANTES","MENSAJES","AUDIOS","VARIAS","NINGUNA"] }
+        { key:"evidencias_estafa", title:"EVIDENCIAS DISPONIBLES", type:"select", options:["CAPTURAS","JUSTIFICANTES","MENSAJES","AUDIOS","VARIAS","NINGUNA"], default:"NINGUNA" }
       ]
     },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1218,14 +1221,17 @@ const QUESTION_SETS = {
   "COACCIONES": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","TESTIGO"] },
     { key:"tipo_coaccion", title:"TIPO DE COACCIÓN", type:"select", options:["IMPEDIR HACER ALGO","OBLIGAR A HACER ALGO","CONTROL DE MOVILIDAD","LABORAL","VECINAL","OTRA"] },
+    { key:"tipo_coaccion_otra", title:"ESPECIFIQUE OTRA COACCIÓN", type:"text", when:(st)=> (st.tipo_coaccion === "OTRA") },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / domicilio / trabajo / municipio" },
     { key:"ambito_coaccion", title:"ÁMBITO", type:"select", options:["PAREJA","FAMILIAR","LABORAL","VECINAL","OTRO"] },
+    { key:"ambito_coaccion_otro", title:"ESPECIFIQUE OTRO ÁMBITO", type:"text", when:(st)=> (st.ambito_coaccion === "OTRO") },
     { key:"medio_coaccion", title:"MEDIO UTILIZADO", type:"select", options:["PRESENCIAL","TELÉFONO","MENSAJERÍA","TERCEROS","OTRO"] },
     { key:"reiteracion_coaccion", title:"REITERACIÓN", type:"select", options:["HECHO ÚNICO","REITERADO"] },
     { key:"n_eventos_aprox", title:"NÚMERO APROXIMADO DE EVENTOS", type:"text", when:(st)=> (st.reiteracion_coaccion === "REITERADO") },
     { key:"perjuicio_coaccion", title:"PERJUICIO PRINCIPAL", type:"select", options:["PERSONAL","LABORAL","ECONÓMICO","FAMILIAR","OTRO"] },
+    { key:"perjuicio_coaccion_otro", title:"ESPECIFIQUE OTRO PERJUICIO", type:"text", when:(st)=> (st.perjuicio_coaccion === "OTRO") },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1236,15 +1242,17 @@ const QUESTION_SETS = {
     { key:"subtipo_allanamiento", title:"SUBTIPO", type:"select", options:["ALLANAMIENTO DE MORADA","USURPACIÓN DE INMUEBLE","OCUPACIÓN TEMPORAL","OTRA"] },
     { key:"fhl", title:"FECHA, INTERVALO HORARIO Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, interval:true, placeholderLugar:"Domicilio / local / nave / municipio" },
     { key:"inmueble_tipo", title:"TIPO DE INMUEBLE", type:"select", options:["VIVIENDA HABITUAL","SEGUNDA VIVIENDA","LOCAL","NAVE","SOLAR","OTRO"] },
+    { key:"inmueble_tipo_otro", title:"ESPECIFIQUE OTRO TIPO DE INMUEBLE", type:"text", when:(st)=> (st.inmueble_tipo === "OTRO") },
     { key:"metodo_acceso", title:"MÉTODO DE ACCESO", type:"select", options:["ESCALO","FRACTURA CERRADURA","FORZAMIENTO PUERTA","FORZAMIENTO VENTANA","LLAVE FALSA / SUSTRAÍDA","OTRO"] },
     { key:"metodo_acceso_otro", title:"ESPECIFIQUE OTRO MÉTODO DE ACCESO", type:"text", when:(st)=> (st.metodo_acceso === "OTRO") },
     { key:"situacion_actual", title:"SITUACIÓN ACTUAL", type:"select", options:["SIGUEN DENTRO","YA NO ESTÁN","NO SABE"] },
     { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NO","SI"] },
+    { key:"descripcion_danos", title:"INDIQUE QUÉ DAÑOS SE PRODUJERON", type:"text", when:(st)=> (st.danos === "SI") },
     { key:"sustraccion", title:"¿SE PRODUJO SUSTRACCIÓN?", type:"select", options:["NO","SI"] },
     { key:"objetos", title:"OBJETOS SUSTRAÍDOS", type:"objects", when:(st)=> (st.sustraccion === "SI") },
     { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NO","SI"] },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1253,7 +1261,9 @@ const QUESTION_SETS = {
   "APROPIACION_INDEBIDA": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","REPRESENTANTE LEGAL","TESTIGO"] },
     { key:"subtipo_apropiacion", title:"SUBTIPO", type:"select", options:["OBJETO ENTREGADO Y NO DEVUELTO","DEPÓSITO / CUSTODIA","ALQUILER NO DEVUELTO","ERROR DE ENTREGA","OTRO"] },
+    { key:"subtipo_apropiacion_otro", title:"ESPECIFIQUE OTRO SUBTIPO", type:"text", when:(st)=> (st.subtipo_apropiacion === "OTRO") },
     { key:"origen_tenencia", title:"ORIGEN DE LA TENENCIA", type:"select", options:["PRÉSTAMO","DEPÓSITO","ALQUILER","RELACIÓN LABORAL","ERROR DE ENTREGA","OTRO"] },
+    { key:"origen_tenencia_otro", title:"ESPECIFIQUE OTRO ORIGEN DE LA TENENCIA", type:"text", when:(st)=> (st.origen_tenencia === "OTRO") },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / establecimiento / municipio" },
     { key:"objetos", title:"OBJETOS AFECTADOS", type:"objects" },
     { key:"requerimiento_devolucion", title:"¿REQUIRIÓ LA DEVOLUCIÓN?", type:"select", options:["SI","NO"] },
@@ -1262,7 +1272,7 @@ const QUESTION_SETS = {
     { key:"respuesta_requerido", title:"RESPUESTA DEL REQUERIDO", type:"select", options:["SE NIEGA","NO CONTESTA","PROMETE DEVOLVER","OTRA"], when:(st)=> (st.requerimiento_devolucion === "SI") },
     { key:"importe_estimado_eur", title:"IMPORTE ESTIMADO (€)", type:"text", placeholder:"Ej.: 850" },
     { key:"autores", title:"DATOS / DESCRIPCIÓN DEL AUTOR", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1297,7 +1307,7 @@ const QUESTION_SETS = {
     { key:"camaras_detalle", title:"GESTIÓN DE GRABACIONES", type:"text",
       when:(st)=> (st.camaras === "SI")
     },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ]
 };
 
@@ -1306,6 +1316,19 @@ const QUESTION_SETS = {
 const EXPORT_KEY_MAP = QUESTION_SETS["EXPORT_KEY_MAP"] || {};
 // Expose for non-module usage
 Object.assign(UI_ZH, {
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 诈骗 / 网络诈骗",
+  "ESPECIFIQUE OTRO TIPO DE ESTABLECIMIENTO": "请说明其他场所类型",
+  "ESPECIFIQUE OTRA ZONA DEL ESTABLECIMIENTO": "请说明场所内其他区域",
+  "ESPECIFIQUE OTRO SUBTIPO DE ESTAFA": "请说明其他诈骗子类型",
+  "ESPECIFIQUE OTRO CANAL DE CONTACTO": "请说明其他联系渠道",
+  "ESPECIFIQUE OTRO INSTRUMENTO DE PAGO": "请说明其他支付工具",
+  "ESPECIFIQUE OTRO TIPO DE INMUEBLE": "请说明其他不动产类型",
+  "INDIQUE QUÉ DAÑOS SE PRODUJERON": "请说明造成了哪些损坏",
+  "ESPECIFIQUE OTRO SUBTIPO": "请说明其他子类型",
+  "ESPECIFIQUE OTRO ORIGEN DE LA TENENCIA": "请说明其他占有来源",
+  "ESPECIFIQUE OTRA COACCIÓN": "请说明其他胁迫情形",
+  "ESPECIFIQUE OTRO ÁMBITO": "请说明其他范围",
+  "ESPECIFIQUE OTRO PERJUICIO": "请说明其他损害",
   "Completa los campos obligatorios para continuar.": "请填写必填字段后继续。",
   "Indica cuál es el otro documento de identidad.": "请说明其他身份证件的类型。",
   "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "证件号码为必填，除非选择无证件。",
@@ -1313,40 +1336,6 @@ Object.assign(UI_ZH, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "请选择有效的居住国家（使用下方选项）。",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "若居住地在西班牙，请选择省和市镇。",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "若不居住在特内里费，请填写临时住址和预计返程日期。",
-  "Web, app, teléfono, comercio, municipio...": "网页、应用、电话、商铺、城市...",
-  "Calle / domicilio / trabajo / municipio": "街道 / 住址 / 工作地点 / 城市",
-  "Domicilio / local / nave / municipio": "住址 / 店铺 / 仓库 / 城市",
-  "SUBTIPO DE ESTAFA": "诈骗类型",
-  "BANCARIA": "银行",
-  "TARJETA": "银行卡",
-  "COMPRA/VENTA": "买卖",
-  "SUPLANTACIÓN": "冒充身份",
-  "OTRA": "其他",
-  "FECHA, HORA Y LUGAR/CANAL DEL HECHO": "事发日期、时间与地点/渠道",
-  "OPERATIVA ECONÓMICA": "资金操作情况",
-  "CANAL DE CONTACTO": "联系渠道",
-  "TELÉFONO": "电话",
-  "MENSAJERÍA": "即时消息",
-  "INSTRUMENTO DE PAGO": "支付方式",
-  "TRANSFERENCIA": "转账",
-  "EFECTIVO": "现金",
-  "CRIPTOMONEDA": "加密货币",
-  "IMPORTE TOTAL ESTIMADO (€)": "预计总金额 (€)",
-  "NÚMERO APROXIMADO DE OPERACIONES": "大致交易次数",
-  "IDENTIFICADORES Y EVIDENCIAS": "识别信息与证据",
-  "ENTIDAD BANCARIA (SI APLICA)": "银行机构（如适用）",
-  "IDENTIFICADORES RELACIONADOS": "相关识别信息",
-  "EVIDENCIAS DISPONIBLES": "可提供的证据",
-  "CAPTURAS": "截图",
-  "JUSTIFICANTES": "凭证",
-  "MENSAJES": "消息",
-  "AUDIOS": "音频",
-  "VARIAS": "多项",
-  "NINGUNA": "没有",
-  "Ej.: 1250": "例如：1250",
-  "Ej.: 3": "例如：3",
-  "Ej.: Banco X": "例如：X银行",
-  "IBAN, teléfono, email, URL, usuario...": "IBAN、电话、邮箱、URL、用户名...",
 });
 
 window.QUESTION_ZH = { UI_EN: UI_ZH, UI_ZH, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

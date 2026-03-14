@@ -131,6 +131,7 @@ const UI_FR = {
   "DESCRIPCIÓN FÍSICA DEL AUTOR/ES": "DESCRIPTION PHYSIQUE DU/DES AUTEUR(S)",
   "DESCUBRIMIENTO POSTERIOR AL HECHO": "DÉCOUVERTE POSTÉRIEURE AUX FAITS",
   "DESCUIDO": "INATTENTION",
+  "DETALLE ADICIONAL (OPCIONAL)": "DÉTAIL COMPLÉMENTAIRE (OPTIONNEL)",
   "DOCUMENTACIÓN": "DOCUMENTS",
   "Domicilio / establecimiento / municipio": "Domicile / établissement / commune",
   "Domicilio / local / nave / municipio": "Domicile / local / entrepôt / commune",
@@ -155,7 +156,7 @@ const UI_FR = {
   "ESPECIFIQUE OTRO MÉTODO DE SUSTRACCIÓN": "PRÉCISEZ UNE AUTRE MÉTHODE DE SOUSTRACTION",
   "ESPECIFIQUE OTRO TIPO DE DAÑO": "PRÉCISEZ UN AUTRE TYPE DE DÉGÂT",
   "Establecimiento, contacto, ubicación, horario...": "Établissement, contact, adresse, horaires...",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESCROQUERIE / ESCROQUERIE EN LIGNE",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ ESCROQUERIE / ESCROQUERIE EN LIGNE",
   "ESTANCO / LOTERÍA": "TOBACCO / LOTTERY commerce",
   "EVIDENCIAS DISPONIBLES": "ÉLÉMENTS DE PREUVE DISPONIBLES",
   "EXTRAVÍO/PÉRDIDA": "🧳 PERTE / ÉGAREMENT",
@@ -235,7 +236,7 @@ const UI_FR = {
   "OTRA": "AUTRE",
   "OTRO": "AUTRE",
   "OTRO (NO FAMILIAR)": "AUTRE (NON FAMILIAL)",
-  "OTRO (NON FAMILIAR)": "AUTRE (HORS CADRE FAMILIAL)",
+  "OTRO (NO FAMILIAR)": "AUTRE (HORS CADRE FAMILIAL)",
   "OTRO OBJETO PELIGROSO": "AUTRE OBJET DANGEREUX",
   "OTRO TIPO DE HECHO": "➡️ AUTRE TYPE DE FAIT",
   "OTROS": "AUTRE",
@@ -341,11 +342,7 @@ const GLOBAL_ROUTES = {
     "ESTAFA / ESTAFA INFORMÁTICA": "ESTAFA",
     "AGRESIÓN": "AGRESION_SELECTOR",
     "AMENAZAS": "AMENAZAS_GLOBAL",
-    "ALLANAMIENTO / USURPACIÓN": "ALLANAMIENTO_USURPACION",
-    "APROPIACIÓN INDEBIDA": "APROPIACION_INDEBIDA",
-    "COACCIONES": "COACCIONES",
-    "CARÁCTER SEXUAL": "CARACTER_SEXUAL",
-    "DENUNCIA GENÉRICA": "OTROS"
+    "OTRO TIPO DE HECHO": "OTRO_TIPO_HECHO"
   },
 
   // Entrada secundaria (segunda página de categorías)
@@ -367,7 +364,7 @@ const GLOBAL_ROUTES = {
   // Agresión
   AGRESION_SELECTOR: {
     "ENTORNO FAMILIAR / AFECTIVO": "AGRESION_FAMILIAR_AFECTIVO",
-    "OTRO (NON FAMILIAR)": "LESIONES"
+    "OTRO (NO FAMILIAR)": "LESIONES"
   }
 };
 const QUESTION_SETS = {
@@ -517,11 +514,7 @@ const QUESTION_SETS = {
         "ESTAFA / ESTAFA INFORMÁTICA",
         "AGRESIÓN",
         "AMENAZAS",
-        "ALLANAMIENTO / USURPACIÓN",
-        "APROPIACIÓN INDEBIDA",
-        "COACCIONES",
-        "CARÁCTER SEXUAL",
-        "DENUNCIA GENÉRICA"
+        "OTRO TIPO DE HECHO"
       ]
     }
   ],
@@ -588,8 +581,7 @@ const QUESTION_SETS = {
         "SI, FORCEJEO O AGRESION",
         "SI, INTIMIDACION SIN CONTACTO"
       ],
-      when: (st) => st.calidad_denunciante === "PERJUDICADO"
-    },
+      },
 
     {
       key: "lesiones",
@@ -625,15 +617,7 @@ const QUESTION_SETS = {
     {
       key: "tipo_intimidacion",
       title: "TIPO DE INTIMIDACIÓN",
-      type: "select",
-      options: [
-        "VERBAL",
-        "GESTUAL",
-        "ARMA BLANCA",
-        "ARMA DE FUEGO",
-        "OTRO OBJETO PELIGROSO",
-        "SIN INTIMIDACIÓN"
-      ],
+      type: "text",
       when: (st) =>
         st.interaccion_autor === "SI, INTIMIDACION SIN CONTACTO"
     },
@@ -654,7 +638,7 @@ const QUESTION_SETS = {
 
     {
       key: "resumen",
-      title:"BREVE RESUMEN DE LOS HECHOS",
+      title: "RESUMEN DE LOS HECHOS",
       type: "textarea",
       max: 900
     },
@@ -685,19 +669,23 @@ const QUESTION_SETS = {
       when:(st)=> (st.metodo_sustraccion === "OTRO")
     },
     { key:"interaccion_autor", title:"¿INTERACCION CON EL AUTOR?", type:"select", options:[
-      "NON",
+      "NO",
       "SI, COMUNICACION",
-      "SI, FORCEJEO O AGRESION"
+      "SI, FORCEJEO O AGRESION",
+      "SI, INTIMIDACION SIN CONTACTO"
     ]},
-    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NON","SI"],
+    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NO","SI"],
       when:(st)=> (st.interaccion_autor === "SI, FORCEJEO O AGRESION")
     },
-    { key:"parte_medico", title:"¿APORTA INFORME MEDICO?", type:"select", options:["NON","SI"],
+    { key:"parte_medico", title:"¿APORTA INFORME MEDICO?", type:"select", options:["NO","SI"],
       when:(st)=> (st.interaccion_autor === "SI, FORCEJEO O AGRESION" && st.lesiones === "SI")
     },
-    { key:"autor_retenido", title:"¿AUTOR RETENIDO EN EL LUGAR?", type:"select", options:["SI","NON"] },
+    { key:"tipo_intimidacion", title:"TIPO DE INTIMIDACIÓN", type:"text",
+      when:(st)=> (st.interaccion_autor === "SI, INTIMIDACION SIN CONTACTO")
+    },
+    { key:"autor_retenido", title:"¿AUTOR RETENIDO EN EL LUGAR?", type:"select", options:["SI","NO"] },
     { key:"camaras", title:"¿HAY CAMARAS DE SEGURIDAD?", type:"select", options:[
-      "NON",
+      "NO",
       "SI, LAS APORTA EN ESTE ACTO",
       "SI, LAS APORTARÁ EN SEDE JUDICIAL",
       "SI, FACILITA CONTACTO PARA SU GESTION"
@@ -713,6 +701,9 @@ const QUESTION_SETS = {
       "ESTANCO / LOTERÍA",
       "OTRO"
     ]},
+    { key:"tipo_establecimiento_otro", title:"ESPECIFIQUE OTRO TIPO DE ESTABLECIMIENTO", type:"text",
+      when:(st)=> (st.tipo_establecimiento === "OTRO")
+    },
     { key:"zona_objetivo", title:"ZONA DEL ESTABLECIMIENTO", type:"select", options:[
       "LÍNEA DE CAJA",
       "MOSTRADOR",
@@ -721,6 +712,9 @@ const QUESTION_SETS = {
       "TERRAZA / EXTERIOR",
       "OTRA"
     ]},
+    { key:"zona_objetivo_otra", title:"ESPECIFIQUE OTRA ZONA DEL ESTABLECIMIENTO", type:"text",
+      when:(st)=> (st.zona_objetivo === "OTRA")
+    },
     { key:"objetos", title:"OBJETOS SUSTRAIDOS", type:"objects" },
     { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 }
   ],
@@ -740,7 +734,7 @@ const QUESTION_SETS = {
       "DESCUBRIMIENTO POSTERIOR AL HECHO",
       "TESTIGO DE LOS HECHOS"
     ],
-      when:(st)=> (st.calidad_denunciante !== "TESTIGO")
+      when:(st)=> (st.calidad_denunciante === "PERJUDICADO")
     },
 
     { key:"fhl", title:"FECHA, INTERVALO HORARIO Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Domicilio / establecimiento / municipio", interval:true },
@@ -759,10 +753,10 @@ const QUESTION_SETS = {
     },
 
     // PERJUDICADO: daños y presupuesto
-    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NON","SI"],
+    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante === "PERJUDICADO")
     },
-    { key:"presupuesto_reparacion", title:"¿APORTA PRESUPUESTO DE REPARACIÓN?", type:"select", options:["NON","SI"],
+    { key:"presupuesto_reparacion", title:"¿APORTA PRESUPUESTO DE REPARACIÓN?", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante === "PERJUDICADO" && st.danos === "SI")
     },
     { key:"danos_descripcion", title:"DESCRIPCIÓN DE LOS DAÑOS", type:"text", placeholder:"Describe brevemente los daños producidos...",
@@ -788,12 +782,12 @@ const QUESTION_SETS = {
     },
 
     // PERJUDICADO: manipulación del lugar
-    { key:"ha_manipulado_lugar", title:"¿HA MANIPULADO EL LUGAR DE LOS HECHOS? (PARA CONOCIMIENTO DE LA BRIGADA DE POLICÍA CIENTÍFICA)", type:"select", options:["NON","SI"],
+    { key:"ha_manipulado_lugar", title:"¿HA MANIPULADO EL LUGAR DE LOS HECHOS? (PARA CONOCIMIENTO DE LA BRIGADA DE POLICÍA CIENTÍFICA)", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante === "PERJUDICADO")
     },
 
     // PERJUDICADO: sustracción y objetos solo si SI
-    { key:"sustraccion", title:"¿SE HA PRODUCIDO SUSTRACCIÓN?", type:"select", options:["NON","SI"],
+    { key:"sustraccion", title:"¿SE HA PRODUCIDO SUSTRACCIÓN?", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante === "PERJUDICADO")
     },
     { key:"objetos", title:"OBJETOS SUSTRAÍDOS", type:"objects",
@@ -802,7 +796,7 @@ const QUESTION_SETS = {
 
     // PERJUDICADO: cámaras de seguridad
     { key:"camaras", title:"¿HAY CAMARAS DE SEGURIDAD?", type:"select", options:[
-      "NON",
+      "NO",
       "SI, LAS APORTA EN ESTE ACTO",
       "SI, LAS APORTARÁ EN SEDE JUDICIAL",
       "SI, FACILITA CONTACTO PARA SU GESTION"
@@ -886,7 +880,7 @@ const QUESTION_SETS = {
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / zona / municipio" },
 
     // Si es TESTIGO, NON puede valorar lesiones: se omite todo lo de lesiones/parte.
-    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NON","SI"],
+    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante !== "TESTIGO")
     },
 
@@ -894,20 +888,20 @@ const QUESTION_SETS = {
       when:(st)=> (st.calidad_denunciante !== "TESTIGO" && st.lesiones === "SI")
     },
 
-    { key:"parte_medico", title:"¿APORTA PARTE MEDICO?", type:"select", options:["NON","SI"],
+    { key:"parte_medico", title:"¿APORTA PARTE MEDICO?", type:"select", options:["NO","SI"],
       when:(st)=> (st.calidad_denunciante !== "TESTIGO" && st.lesiones === "SI")
     },
 
     // === Identificación del autor en agresión no familiar ===
     // PERJUDICADO: primero si conoce autor
-   { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NON"] },
+   { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NO"] },
 
 { key:"datos_autor", title:"APORTE DATOS", type:"text",
   when:(st)=> (st.conoce_autor === "SI")
 },
 
 { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors",
-  when:(st)=> (st.conoce_autor === "NON" || !st.conoce_autor)
+  when:(st)=> (st.conoce_autor === "NO" || !st.conoce_autor)
 },
 
     { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 }
@@ -923,7 +917,7 @@ const QUESTION_SETS = {
       type: "select",
       options: [
         "ENTORNO FAMILIAR / AFECTIVO",
-        "OTRO (NON FAMILIAR)"
+        "OTRO (NO FAMILIAR)"
       ]
     }
   ],
@@ -944,15 +938,15 @@ const QUESTION_SETS = {
     { key:"contexto_victima", title:"CONTEXTO DE LA VÍCTIMA", type:"group",
       when:(st)=> (st.condicion === "VICTIMA"),
       items:[
-        { key:"hay_convivencia", title:"¿HAY CONVIVENCIA?", type:"select", options:["SI","NON"] },
-        { key:"tiene_lesiones", title:"¿TIENE LESIONES?", type:"select", options:["SI","NON"] }
+        { key:"hay_convivencia", title:"¿HAY CONVIVENCIA?", type:"select", options:["SI","NO"] },
+        { key:"tiene_lesiones", title:"¿TIENE LESIONES?", type:"select", options:["SI","NO"] }
       ]
     },
     { key:"lesiones_victima", title:"LESIONES", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tiene_lesiones === "SI"),
       items:[
         { key:"descripcion_lesiones", title:"DESCRIBA LAS LESIONES", type:"textarea", max:900, fullRow:true },
-        { key:"informe_medico", title:"¿APORTA INFORME MEDICO?", type:"select", options:["SI","NON"] }
+        { key:"informe_medico", title:"¿APORTA INFORME MEDICO?", type:"select", options:["SI","NO"] }
       ]
     },
 
@@ -960,56 +954,56 @@ const QUESTION_SETS = {
     { key:"relacion_pareja_vg", title:"RELACIÓN CON EL AUTOR (V. GÉNERO)", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tipo_afectividad === "AGRESIÓN DE PAREJA (HOMBRE A MUJER) - V. GÉNERO"),
       items:[
-        { key:"es_pareja_actual", title:"¿ES SU PAREJA ACTUAL?", type:"select", options:["SI","NON"] },
+        { key:"es_pareja_actual", title:"¿ES SU PAREJA ACTUAL?", type:"select", options:["SI","NO"] },
         { key:"tiempo_relacion", title:"¿CUANTO TIEMPO DE RELACION?", type:"text", when:(st)=> (st.es_pareja_actual === "SI") }
       ]
     },
     { key:"vg_bloque_1", title:"INDICADORES DE RIESGO (I)", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tipo_afectividad === "AGRESIÓN DE PAREJA (HOMBRE A MUJER) - V. GÉNERO"),
       items:[
-        { key:"vg_p9", title:"¿Le ha agredido físicamente en otra ocasión?", type:"select", options:["SI","NON"] },
-        { key:"vg_p10", title:"¿Le ha insultado, humillado o amenazado?", type:"select", options:["SI","NON"] },
-        { key:"vg_p11", title:"¿Le controla el teléfono, redes sociales o amistades?", type:"select", options:["SI","NON"] },
-        { key:"vg_p12", title:"¿Le impide trabajar, estudiar o relacionarse?", type:"select", options:["SI","NON"] },
-        { key:"vg_p13", title:"¿Le obliga o ha obligado a mantener relaciones sexuales?", type:"select", options:["SI","NON"] },
-        { key:"vg_p14", title:"¿Ha destruido objetos o amenazado con hacerlo?", type:"select", options:["SI","NON"] }
+        { key:"vg_p9", title:"¿Le ha agredido físicamente en otra ocasión?", type:"select", options:["SI","NO"] },
+        { key:"vg_p10", title:"¿Le ha insultado, humillado o amenazado?", type:"select", options:["SI","NO"] },
+        { key:"vg_p11", title:"¿Le controla el teléfono, redes sociales o amistades?", type:"select", options:["SI","NO"] },
+        { key:"vg_p12", title:"¿Le impide trabajar, estudiar o relacionarse?", type:"select", options:["SI","NO"] },
+        { key:"vg_p13", title:"¿Le obliga o ha obligado a mantener relaciones sexuales?", type:"select", options:["SI","NO"] },
+        { key:"vg_p14", title:"¿Ha destruido objetos o amenazado con hacerlo?", type:"select", options:["SI","NO"] }
       ]
     },
     { key:"vg_bloque_2", title:"INDICADORES DE RIESGO (II)", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tipo_afectividad === "AGRESIÓN DE PAREJA (HOMBRE A MUJER) - V. GÉNERO"),
       items:[
-        { key:"vg_p15", title:"¿Le ha dicho que la va a matar?", type:"select", options:["SI","NON"] },
-        { key:"vg_p16", title:"¿Ha amenazado con suicidarse si usted lo deja?", type:"select", options:["SI","NON"] },
-        { key:"vg_p17", title:"¿Tiene acceso a armas, cuchillos u objetos peligrosos?", type:"select", options:["SI","NON"] },
-        { key:"vg_p18", title:"¿Consume alcohol o drogas de forma habitual?", type:"select", options:["SI","NON"] },
+        { key:"vg_p15", title:"¿Le ha dicho que la va a matar?", type:"select", options:["SI","NO"] },
+        { key:"vg_p16", title:"¿Ha amenazado con suicidarse si usted lo deja?", type:"select", options:["SI","NO"] },
+        { key:"vg_p17", title:"¿Tiene acceso a armas, cuchillos u objetos peligrosos?", type:"select", options:["SI","NO"] },
+        { key:"vg_p18", title:"¿Consume alcohol o drogas de forma habitual?", type:"select", options:["SI","NO"] },
         { key:"vg_p18_det", title:"Describe qué tipo de sustancias y habitualidad", type:"text", when:(st)=> (st.vg_p18 === "SI"), fullRow:true },
-        { key:"vg_p19", title:"¿Se vuelve más violento cuando consume?", type:"select", options:["SI","NON"] },
-        { key:"vg_p20", title:"¿Los episodios han aumentado en frecuencia o gravedad?", type:"select", options:["SI","NON"] }
+        { key:"vg_p19", title:"¿Se vuelve más violento cuando consume?", type:"select", options:["SI","NO"] },
+        { key:"vg_p20", title:"¿Los episodios han aumentado en frecuencia o gravedad?", type:"select", options:["SI","NO"] }
       ]
     },
     { key:"vg_bloque_3", title:"ANTECEDENTES Y MENORES", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tipo_afectividad === "AGRESIÓN DE PAREJA (HOMBRE A MUJER) - V. GÉNERO"),
       items:[
         { key:"vg_p21", title:"¿La violencia comenzó hace poco o lleva tiempo ocurriendo?", type:"text", fullRow:true },
-        { key:"vg_p22", title:"¿Ha intentado usted separarse anteriormente?", type:"select", options:["SI","NON"] },
+        { key:"vg_p22", title:"¿Ha intentado usted separarse anteriormente?", type:"select", options:["SI","NO"] },
         { key:"vg_p23", title:"¿Qué ocurrió cuando lo intentó?", type:"text", when:(st)=> (st.vg_p22 === "SI"), fullRow:true },
-        { key:"vg_p24", title:"¿Hay menores que presencien los hechos?", type:"select", options:["SI","NON"] },
-        { key:"vg_p25", title:"¿Ha agredido o amenazado alguna vez a los menores?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p24 === "SI") },
-        { key:"vg_p26", title:"¿Cree que los menores están en peligro?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p24 === "SI") }
+        { key:"vg_p24", title:"¿Hay menores que presencien los hechos?", type:"select", options:["SI","NO"] },
+        { key:"vg_p25", title:"¿Ha agredido o amenazado alguna vez a los menores?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p24 === "SI") },
+        { key:"vg_p26", title:"¿Cree que los menores están en peligro?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p24 === "SI") }
       ]
     },
     { key:"vg_bloque_4", title:"PROTECCIÓN Y APOYO", type:"group",
       when:(st)=> (st.condicion === "VICTIMA" && st.tipo_afectividad === "AGRESIÓN DE PAREJA (HOMBRE A MUJER) - V. GÉNERO"),
       items:[
-        { key:"vg_p27", title:"¿Ha denunciado anteriormente estos hechos?", type:"select", options:["SI","NON"] },
-        { key:"vg_p28", title:"¿Tiene o ha tenido orden de protección?", type:"select", options:["SI","NON"] },
-        { key:"vg_p28b", title:"¿Sobre el autor?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p28 === "SI") },
-        { key:"vg_p28_solicita", title:"¿DESEA SOLICITAR ORDEN DE PROTECCIÓN?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p28 === "NON" || st.vg_p28 === "SI") },
-        { key:"vg_p29", title:"¿Está siendo atendida por servicios sociales o sanitarios?", type:"select", options:["SI","NON"] },
-        { key:"vg_p30a", title:"¿Alguna persona de su entorno conoce la situación?", type:"select", options:["SI","NON"] },
-        { key:"vg_p30b", title:"¿Depende usted económicamente de él?", type:"select", options:["SI","NON"] },
-        { key:"vg_p31", title:"¿Cree usted que la situación puede empeorar?", type:"select", options:["SI","NON"] },
-        { key:"vg_p32", title:"¿Tiene miedo real por su vida?", type:"select", options:["SI","NON"] }
+        { key:"vg_p27", title:"¿Ha denunciado anteriormente estos hechos?", type:"select", options:["SI","NO"] },
+        { key:"vg_p28", title:"¿Tiene o ha tenido orden de protección?", type:"select", options:["SI","NO"] },
+        { key:"vg_p28b", title:"¿Sobre el autor?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p28 === "SI") },
+        { key:"vg_p28_solicita", title:"¿DESEA SOLICITAR ORDEN DE PROTECCIÓN?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p28 === "NO" || st.vg_p28 === "SI") },
+        { key:"vg_p29", title:"¿Está siendo atendida por servicios sociales o sanitarios?", type:"select", options:["SI","NO"] },
+        { key:"vg_p30a", title:"¿Alguna persona de su entorno conoce la situación?", type:"select", options:["SI","NO"] },
+        { key:"vg_p30b", title:"¿Depende usted económicamente de él?", type:"select", options:["SI","NO"] },
+        { key:"vg_p31", title:"¿Cree usted que la situación puede empeorar?", type:"select", options:["SI","NO"] },
+        { key:"vg_p32", title:"¿Tiene miedo real por su vida?", type:"select", options:["SI","NO"] }
       ]
     },
 
@@ -1116,15 +1110,15 @@ const QUESTION_SETS = {
     { key:"vg_amenazas_bloque_4", title:"PROTECCIÓN Y APOYO", type:"group",
       when:(st)=> (st.conoce_autor === "SI" && st.condicion === "PERJUDICADO" && st.vinculo_autor === "AUTOR VARÓN Y PAREJA (O SIMILAR AFECTIVIDAD EN EL PRESENTE O PASADO) - V. GÉNERO"),
       items:[
-        { key:"vg_p27", title:"¿Ha denunciado anteriormente estos hechos?", type:"select", options:["SI","NON"] },
-        { key:"vg_p28", title:"¿Tiene o ha tenido orden de protección?", type:"select", options:["SI","NON"] },
-        { key:"vg_p28b", title:"¿Sobre el autor?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p28 === "SI") },
-        { key:"vg_p28_solicita", title:"¿DESEA SOLICITAR ORDEN DE PROTECCIÓN?", type:"select", options:["SI","NON"], when:(st)=> (st.vg_p28 === "SI" || st.vg_p28 === "NON") },
-        { key:"vg_p29", title:"¿Está siendo atendida por servicios sociales o sanitarios?", type:"select", options:["SI","NON"] },
-        { key:"vg_p30a", title:"¿Alguna persona de su entorno conoce la situación?", type:"select", options:["SI","NON"] },
-        { key:"vg_p30b", title:"¿Depende usted económicamente de él?", type:"select", options:["SI","NON"] },
-        { key:"vg_p31", title:"¿Cree usted que la situación puede empeorar?", type:"select", options:["SI","NON"] },
-        { key:"vg_p32", title:"¿Tiene miedo real por su vida?", type:"select", options:["SI","NON"] }
+        { key:"vg_p27", title:"¿Ha denunciado anteriormente estos hechos?", type:"select", options:["SI","NO"] },
+        { key:"vg_p28", title:"¿Tiene o ha tenido orden de protección?", type:"select", options:["SI","NO"] },
+        { key:"vg_p28b", title:"¿Sobre el autor?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p28 === "SI") },
+        { key:"vg_p28_solicita", title:"¿DESEA SOLICITAR ORDEN DE PROTECCIÓN?", type:"select", options:["SI","NO"], when:(st)=> (st.vg_p28 === "SI" || st.vg_p28 === "NO") },
+        { key:"vg_p29", title:"¿Está siendo atendida por servicios sociales o sanitarios?", type:"select", options:["SI","NO"] },
+        { key:"vg_p30a", title:"¿Alguna persona de su entorno conoce la situación?", type:"select", options:["SI","NO"] },
+        { key:"vg_p30b", title:"¿Depende usted económicamente de él?", type:"select", options:["SI","NO"] },
+        { key:"vg_p31", title:"¿Cree usted que la situación puede empeorar?", type:"select", options:["SI","NO"] },
+        { key:"vg_p32", title:"¿Tiene miedo real por su vida?", type:"select", options:["SI","NO"] }
       ]
     },
     { key:"vd_amenazas_bloque", title:"VALORACIÓN V. DOMÉSTICA", type:"group",
@@ -1160,7 +1154,7 @@ const QUESTION_SETS = {
       key: "autores",
       title: "DESCRIPCIÓN DEL AUTOR",
       type: "authors",
-      when: (st)=> (st.conoce_autor === "NON")
+      when: (st)=> (st.conoce_autor === "NO")
     },
     {
       key: "resumen",
@@ -1176,12 +1170,12 @@ const QUESTION_SETS = {
   "CARACTER_SEXUAL": [
     { key:"condicion", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["VICTIMA","TESTIGO"] },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / zona / municipio" },
-    { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NON"] },
+    { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NO"] },
     { key:"datos_autor", title:"AÑADA DATOS DEL AUTOR", type:"text",
       when:(st)=> (st.conoce_autor === "SI")
     },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR", type:"authors",
-      when:(st)=> (st.conoce_autor === "NON")
+      when:(st)=> (st.conoce_autor === "NO")
     },
     { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 }
   ],
@@ -1201,11 +1195,20 @@ const QUESTION_SETS = {
   "ESTAFA": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","REPRESENTANTE LEGAL","TESTIGO"] },
     { key:"subtipo_estafa", title:"SUBTIPO DE ESTAFA", type:"select", options:["BANCARIA","BIZUM","TARJETA","PHISHING","COMPRA/VENTA","SUPLANTACIÓN","OTRA"] },
+    { key:"subtipo_estafa_otra", title:"ESPECIFIQUE OTRO SUBTIPO DE ESTAFA", type:"text",
+      when:(st)=> (st.subtipo_estafa === "OTRA")
+    },
     { key:"fhl", title:"FECHA, HORA Y LUGAR/CANAL DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Web, app, teléfono, comercio, municipio..." },
     { key:"estafa_transaccion", title:"OPERATIVA ECONÓMICA", type:"group",
       items:[
         { key:"canal_contacto", title:"CANAL DE CONTACTO", type:"select", options:["TELÉFONO","SMS","EMAIL","WEB","APP","RRSS","MENSAJERÍA","OTRO"] },
+        { key:"canal_contacto_otro", title:"ESPECIFIQUE OTRO CANAL DE CONTACTO", type:"text",
+          when:(st)=> (st.canal_contacto === "OTRO")
+        },
         { key:"instrumento_pago", title:"INSTRUMENTO DE PAGO", type:"select", options:["TRANSFERENCIA","TARJETA","BIZUM","EFECTIVO","CRIPTOMONEDA","OTRO"] },
+        { key:"instrumento_pago_otro", title:"ESPECIFIQUE OTRO INSTRUMENTO DE PAGO", type:"text",
+          when:(st)=> (st.instrumento_pago === "OTRO")
+        },
         { key:"importe_total_eur", title:"IMPORTE TOTAL ESTIMADO (€)", type:"text", placeholder:"Ej.: 1250" },
         { key:"n_operaciones", title:"NÚMERO APROXIMADO DE OPERACIONES", type:"text", placeholder:"Ej.: 3" }
       ]
@@ -1214,10 +1217,10 @@ const QUESTION_SETS = {
       items:[
         { key:"entidad_bancaria", title:"ENTIDAD BANCARIA (SI APLICA)", type:"text", placeholder:"Ej.: Banco X" },
         { key:"identificadores_estafa", title:"IDENTIFICADORES RELACIONADOS", type:"text", placeholder:"IBAN, teléfono, email, URL, usuario...", fullRow:true },
-        { key:"evidencias_estafa", title:"EVIDENCIAS DISPONIBLES", type:"select", options:["CAPTURAS","JUSTIFICANTES","MENSAJES","AUDIOS","VARIAS","NINGUNA"] }
+        { key:"evidencias_estafa", title:"EVIDENCIAS DISPONIBLES", type:"select", options:["CAPTURAS","JUSTIFICANTES","MENSAJES","AUDIOS","VARIAS","NINGUNA"], default:"NINGUNA" }
       ]
     },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1226,14 +1229,17 @@ const QUESTION_SETS = {
   "COACCIONES": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","TESTIGO"] },
     { key:"tipo_coaccion", title:"TIPO DE COACCIÓN", type:"select", options:["IMPEDIR HACER ALGO","OBLIGAR A HACER ALGO","CONTROL DE MOVILIDAD","LABORAL","VECINAL","OTRA"] },
+    { key:"tipo_coaccion_otra", title:"ESPECIFIQUE OTRA COACCIÓN", type:"text", when:(st)=> (st.tipo_coaccion === "OTRA") },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / domicilio / trabajo / municipio" },
     { key:"ambito_coaccion", title:"ÁMBITO", type:"select", options:["PAREJA","FAMILIAR","LABORAL","VECINAL","OTRO"] },
+    { key:"ambito_coaccion_otro", title:"ESPECIFIQUE OTRO ÁMBITO", type:"text", when:(st)=> (st.ambito_coaccion === "OTRO") },
     { key:"medio_coaccion", title:"MEDIO UTILIZADO", type:"select", options:["PRESENCIAL","TELÉFONO","MENSAJERÍA","TERCEROS","OTRO"] },
     { key:"reiteracion_coaccion", title:"REITERACIÓN", type:"select", options:["HECHO ÚNICO","REITERADO"] },
     { key:"n_eventos_aprox", title:"NÚMERO APROXIMADO DE EVENTOS", type:"text", when:(st)=> (st.reiteracion_coaccion === "REITERADO") },
     { key:"perjuicio_coaccion", title:"PERJUICIO PRINCIPAL", type:"select", options:["PERSONAL","LABORAL","ECONÓMICO","FAMILIAR","OTRO"] },
+    { key:"perjuicio_coaccion_otro", title:"ESPECIFIQUE OTRO PERJUICIO", type:"text", when:(st)=> (st.perjuicio_coaccion === "OTRO") },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1244,15 +1250,17 @@ const QUESTION_SETS = {
     { key:"subtipo_allanamiento", title:"SUBTIPO", type:"select", options:["ALLANAMIENTO DE MORADA","USURPACIÓN DE INMUEBLE","OCUPACIÓN TEMPORAL","OTRA"] },
     { key:"fhl", title:"FECHA, INTERVALO HORARIO Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, interval:true, placeholderLugar:"Domicilio / local / nave / municipio" },
     { key:"inmueble_tipo", title:"TIPO DE INMUEBLE", type:"select", options:["VIVIENDA HABITUAL","SEGUNDA VIVIENDA","LOCAL","NAVE","SOLAR","OTRO"] },
+    { key:"inmueble_tipo_otro", title:"ESPECIFIQUE OTRO TIPO DE INMUEBLE", type:"text", when:(st)=> (st.inmueble_tipo === "OTRO") },
     { key:"metodo_acceso", title:"MÉTODO DE ACCESO", type:"select", options:["ESCALO","FRACTURA CERRADURA","FORZAMIENTO PUERTA","FORZAMIENTO VENTANA","LLAVE FALSA / SUSTRAÍDA","OTRO"] },
     { key:"metodo_acceso_otro", title:"ESPECIFIQUE OTRO MÉTODO DE ACCESO", type:"text", when:(st)=> (st.metodo_acceso === "OTRO") },
-    { key:"situacion_actual", title:"SITUACIÓN ACTUAL", type:"select", options:["SIGUEN DENTRO","YA NON ESTÁN","NON SABE"] },
-    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NON","SI"] },
-    { key:"sustraccion", title:"¿SE PRODUJO SUSTRACCIÓN?", type:"select", options:["NON","SI"] },
+    { key:"situacion_actual", title:"SITUACIÓN ACTUAL", type:"select", options:["SIGUEN DENTRO","YA NO ESTÁN","NO SABE"] },
+    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NO","SI"] },
+    { key:"descripcion_danos", title:"INDIQUE QUÉ DAÑOS SE PRODUJERON", type:"text", when:(st)=> (st.danos === "SI") },
+    { key:"sustraccion", title:"¿SE PRODUJO SUSTRACCIÓN?", type:"select", options:["NO","SI"] },
     { key:"objetos", title:"OBJETOS SUSTRAÍDOS", type:"objects", when:(st)=> (st.sustraccion === "SI") },
-    { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NON","SI"] },
+    { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NO","SI"] },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1260,17 +1268,19 @@ const QUESTION_SETS = {
   // =============================
   "APROPIACION_INDEBIDA": [
     { key:"calidad_denunciante", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","REPRESENTANTE LEGAL","TESTIGO"] },
-    { key:"subtipo_apropiacion", title:"SUBTIPO", type:"select", options:["OBJETO ENTREGADO Y NON DEVUELTO","DEPÓSITO / CUSTODIA","ALQUILER NON DEVUELTO","ERROR DE ENTREGA","OTRO"] },
+    { key:"subtipo_apropiacion", title:"SUBTIPO", type:"select", options:["OBJETO ENTREGADO Y NO DEVUELTO","DEPÓSITO / CUSTODIA","ALQUILER NO DEVUELTO","ERROR DE ENTREGA","OTRO"] },
+    { key:"subtipo_apropiacion_otro", title:"ESPECIFIQUE OTRO SUBTIPO", type:"text", when:(st)=> (st.subtipo_apropiacion === "OTRO") },
     { key:"origen_tenencia", title:"ORIGEN DE LA TENENCIA", type:"select", options:["PRÉSTAMO","DEPÓSITO","ALQUILER","RELACIÓN LABORAL","ERROR DE ENTREGA","OTRO"] },
+    { key:"origen_tenencia_otro", title:"ESPECIFIQUE OTRO ORIGEN DE LA TENENCIA", type:"text", when:(st)=> (st.origen_tenencia === "OTRO") },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / establecimiento / municipio" },
     { key:"objetos", title:"OBJETOS AFECTADOS", type:"objects" },
-    { key:"requerimiento_devolucion", title:"¿REQUIRIÓ LA DEVOLUCIÓN?", type:"select", options:["SI","NON"] },
+    { key:"requerimiento_devolucion", title:"¿REQUIRIÓ LA DEVOLUCIÓN?", type:"select", options:["SI","NO"] },
     { key:"fecha_requerimiento", title:"FECHA DEL REQUERIMIENTO", type:"date", when:(st)=> (st.requerimiento_devolucion === "SI") },
     { key:"medio_requerimiento", title:"MEDIO DEL REQUERIMIENTO", type:"select", options:["WHATSAPP","EMAIL","BUROFAX","LLAMADA","PRESENCIAL","OTRO"], when:(st)=> (st.requerimiento_devolucion === "SI") },
     { key:"respuesta_requerido", title:"RESPUESTA DEL REQUERIDO", type:"select", options:["SE NIEGA","NO CONTESTA","PROMETE DEVOLVER","OTRA"], when:(st)=> (st.requerimiento_devolucion === "SI") },
     { key:"importe_estimado_eur", title:"IMPORTE ESTIMADO (€)", type:"text", placeholder:"Ej.: 850" },
     { key:"autores", title:"DATOS / DESCRIPCIÓN DEL AUTOR", type:"authors" },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ],
 
   // =============================
@@ -1279,33 +1289,33 @@ const QUESTION_SETS = {
   "OTROS": [
     { key:"condicion", title:"DENUNCIA EN CALIDAD DE...", type:"select", options:["PERJUDICADO","TESTIGO"] },
     { key:"fhl", title:"FECHA, HORA Y LUGAR DEL HECHO", type:"fhl", horaHastaOpcional:true, placeholderLugar:"Calle / zona / municipio" },
-    { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NON"] },
+    { key:"conoce_autor", title:"¿CONOCE AL AUTOR DE LOS HECHOS?", type:"select", options:["SI","NO"] },
     { key:"datos_autor", title:"AÑADA DATOS DEL AUTOR", type:"text",
       when:(st)=> (st.conoce_autor === "SI")
     },
     { key:"autores", title:"DESCRIPCIÓN DEL AUTOR/ES", type:"authors",
-      when:(st)=> (st.conoce_autor === "NON")
+      when:(st)=> (st.conoce_autor === "NO")
     },
-    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NON","SI"] },
+    { key:"lesiones", title:"¿PRESENTA LESIONES?", type:"select", options:["NO","SI"] },
     { key:"descripcion_lesiones", title:"DESCRIBA LAS LESIONES", type:"textarea", max:900,
       when:(st)=> (st.lesiones === "SI")
     },
-    { key:"parte_medico", title:"¿APORTA INFORME/PARTE MÉDICO?", type:"select", options:["NON","SI"],
+    { key:"parte_medico", title:"¿APORTA INFORME/PARTE MÉDICO?", type:"select", options:["NO","SI"],
       when:(st)=> (st.lesiones === "SI")
     },
-    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NON","SI"] },
+    { key:"danos", title:"¿SE PRODUJERON DAÑOS?", type:"select", options:["NO","SI"] },
     { key:"descripcion_danos", title:"DESCRIPCIÓN DE LOS DAÑOS", type:"text",
       when:(st)=> (st.danos === "SI")
     },
-    { key:"sustraccion", title:"¿SE PRODUJO SUSTRACCIÓN DE OBJETOS?", type:"select", options:["NON","SI"] },
+    { key:"sustraccion", title:"¿SE PRODUJO SUSTRACCIÓN DE OBJETOS?", type:"select", options:["NO","SI"] },
     { key:"objetos", title:"OBJETOS AFECTADOS/SUSTRAÍDOS", type:"objects",
       when:(st)=> (st.sustraccion === "SI")
     },
-    { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NON","SI"] },
+    { key:"camaras", title:"¿HAY CÁMARAS DE SEGURIDAD?", type:"select", options:["NO","SI"] },
     { key:"camaras_detalle", title:"GESTIÓN DE GRABACIONES", type:"text",
       when:(st)=> (st.camaras === "SI")
     },
-    { key:"resumen", title:"BREVE RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
+    { key:"resumen", title:"RESUMEN DE LOS HECHOS", type:"textarea", max:900 },
   ]
 };
 
@@ -1316,7 +1326,7 @@ const QUESTION_SETS = {
     "🧳 PERTE / ÉGAREMENT":"🧳 PERTE / ÉGAREMENT",
     "🕵️ VOL / LARCIN":"🕵️ VOL / LARCIN",
     "🧱 DÉGRADATIONS":"🧱 DÉGÂTS MATÉRIELS",
-    "💳 ESCROQUERIE / ESCROQUERIE EN LIGNE":"💳 ESCROQUERIE / ESCROQUERIE EN LIGNE",
+    "💳 🖥️ ESCROQUERIE / ESCROQUERIE EN LIGNE":"💳 🖥️ ESCROQUERIE / ESCROQUERIE EN LIGNE",
     "👊 AGRESSION / BLESSURE":"👊 AGRESSION / BLESSURE",
     "🗣️ MENACES":"🗣️ MENACES",
     "➡️ AUTRE TYPE DE FAIT":"➡️ AUTRE TYPE DE FAIT",
@@ -1412,7 +1422,7 @@ Object.assign(UI_FR, {
   "EXTRAVÍO/PÉRDIDA": "🧳 PERTE / ÉGAREMENT",
   "SUSTRACCIÓN": "🕵️ VOL / LARCIN",
   "DAÑOS": "🧱 DÉGRADATIONS",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESCROQUERIE / ESCROQUERIE EN LIGNE",
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 🖥️ ESCROQUERIE / ESCROQUERIE EN LIGNE",
   "AGRESIÓN": "👊 AGRESSION",
   "AMENAZAS": "🗣️ MENACES",
   "OTRO TIPO DE HECHO": "➡️ AUTRE TYPE DE FAIT",
@@ -1433,7 +1443,7 @@ Object.assign(UI_FR, {
   "EN DOMICILIO / ESTABLECIMIENTO": "AU DOMICILE / ÉTABLISSEMENT",
   "TIPO DE AGRESIÓN": "TYPE D'AGRESSION",
   "ENTORNO FAMILIAR / AFECTIVO": "CADRE FAMILIAL / AFFECTIF",
-  "OTRO (NON FAMILIAR)": "AUTRE (HORS CADRE FAMILIAL)",
+  "OTRO (NO FAMILIAR)": "AUTRE (HORS CADRE FAMILIAL)",
   "FECHA, HORA Y LUGAR DEL HECHO": "DATE, HEURE ET LIEU DES FAITS",
   "FECHA, INTERVALO HORARIO Y LUGAR DEL HECHO": "DATE, PLAGE HORAIRE ET LIEU DES FAITS",
   "FECHA, HORA Y LUGAR DEL EXTRAVÍO": "DATE, HEURE ET LIEU DE LA PERTE",
@@ -1461,6 +1471,7 @@ Object.assign(UI_FR, {
   "BREVE DESCRIPCIÓN FÍSICA DE LOS AUTORES": "BRÈVE DESCRIPTION PHYSIQUE DES AUTEURS",
   "RESUMEN DE LOS HECHOS": "RÉSUMÉ DES FAITS",
   "BREVE RESUMEN DE LOS HECHOS": "BREF RÉSUMÉ DES FAITS",
+  "DETALLE ADICIONAL (OPCIONAL)": "DÉTAIL COMPLÉMENTAIRE (OPTIONNEL)",
   "MÉTODO DE ACCESO (BREVE)": "MÉTHODE D'ACCÈS (BRÈVE)",
   "¿SE PRODUJERON DAÑOS?": "Y A-T-IL EU DES DÉGRADATIONS ?",
   "¿APORTA PRESUPUESTO DE REPARACIÓN?": "FOURNIT-IL/ELLE UN DEVIS DE RÉPARATION ?",
@@ -1641,6 +1652,20 @@ Object.assign(UI_FR, {
 });
 
 Object.assign(UI_FR, {
+  "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESCROQUERIE / ESCROQUERIE EN LIGNE",
+  "💳 🖥️ ESCROQUERIE / ESCROQUERIE EN LIGNE": "💳 ESCROQUERIE / ESCROQUERIE EN LIGNE",
+  "ESPECIFIQUE OTRO TIPO DE ESTABLECIMIENTO": "PRÉCISEZ UN AUTRE TYPE D'ÉTABLISSEMENT",
+  "ESPECIFIQUE OTRA ZONA DEL ESTABLECIMIENTO": "PRÉCISEZ UNE AUTRE ZONE DE L'ÉTABLISSEMENT",
+  "ESPECIFIQUE OTRO SUBTIPO DE ESTAFA": "PRÉCISEZ UN AUTRE SOUS-TYPE D'ESCROQUERIE",
+  "ESPECIFIQUE OTRO CANAL DE CONTACTO": "PRÉCISEZ UN AUTRE CANAL DE CONTACT",
+  "ESPECIFIQUE OTRO INSTRUMENTO DE PAGO": "PRÉCISEZ UN AUTRE MOYEN DE PAIEMENT",
+  "ESPECIFIQUE OTRO TIPO DE INMUEBLE": "PRÉCISEZ UN AUTRE TYPE D'IMMEUBLE",
+  "INDIQUE QUÉ DAÑOS SE PRODUJERON": "INDIQUEZ QUELS DÉGÂTS ONT ÉTÉ CAUSÉS",
+  "ESPECIFIQUE OTRO SUBTIPO": "PRÉCISEZ UN AUTRE SOUS-TYPE",
+  "ESPECIFIQUE OTRO ORIGEN DE LA TENENCIA": "PRÉCISEZ UNE AUTRE ORIGINE DE LA DÉTENTION",
+  "ESPECIFIQUE OTRA COACCIÓN": "PRÉCISEZ UNE AUTRE COACTION",
+  "ESPECIFIQUE OTRO ÁMBITO": "PRÉCISEZ UN AUTRE CADRE",
+  "ESPECIFIQUE OTRO PERJUICIO": "PRÉCISEZ UN AUTRE PRÉJUDICE",
   "Completa los campos obligatorios para continuar.": "Renseignez les champs obligatoires pour continuer.",
   "Indica cuál es el otro documento de identidad.": "Indiquez quel est l’autre document d’identité.",
   "El número de documento es obligatorio salvo que seleccione Indocumentado/Indocumentada.": "Le numéro de document est obligatoire sauf si vous sélectionnez Sans papiers.",
@@ -1648,40 +1673,6 @@ Object.assign(UI_FR, {
   "Selecciona un país de DOMICILIO válido (usa las píldoras).": "Sélectionnez un pays de domicile valide (utilisez les pastilles).",
   "Si el domicilio es ESPAÑA, selecciona PROVINCIA y MUNICIPIO.": "Si le domicile est en Espagne, sélectionnez province et commune.",
   "Si no reside en Tenerife, complete estancia eventual y fecha prevista de regreso.": "Si vous ne résidez pas à Tenerife, complétez l’adresse temporaire et la date prévue de retour.",
-  "Web, app, teléfono, comercio, municipio...": "Web, application, téléphone, commerce, commune...",
-  "Calle / domicilio / trabajo / municipio": "Rue / domicile / travail / commune",
-  "Domicilio / local / nave / municipio": "Domicile / local / entrepôt / commune",
-  "SUBTIPO DE ESTAFA": "TYPE D'ESCROQUERIE",
-  "BANCARIA": "BANCAIRE",
-  "TARJETA": "CARTE",
-  "COMPRA/VENTA": "ACHAT/VENTE",
-  "SUPLANTACIÓN": "USURPATION D'IDENTITÉ",
-  "OTRA": "AUTRE",
-  "FECHA, HORA Y LUGAR/CANAL DEL HECHO": "DATE, HEURE ET LIEU/CANAL DES FAITS",
-  "OPERATIVA ECONÓMICA": "MÉCANISME ÉCONOMIQUE",
-  "CANAL DE CONTACTO": "CANAL DE CONTACT",
-  "TELÉFONO": "TÉLÉPHONE",
-  "MENSAJERÍA": "MESSAGERIE",
-  "INSTRUMENTO DE PAGO": "MOYEN DE PAIEMENT",
-  "TRANSFERENCIA": "VIREMENT",
-  "EFECTIVO": "ESPÈCES",
-  "CRIPTOMONEDA": "CRYPTOMONNAIE",
-  "IMPORTE TOTAL ESTIMADO (€)": "MONTANT TOTAL ESTIMÉ (€)",
-  "NÚMERO APROXIMADO DE OPERACIONES": "NOMBRE APPROXIMATIF D'OPÉRATIONS",
-  "IDENTIFICADORES Y EVIDENCIAS": "IDENTIFIANTS ET PREUVES",
-  "ENTIDAD BANCARIA (SI APLICA)": "ÉTABLISSEMENT BANCAIRE (SI APPLICABLE)",
-  "IDENTIFICADORES RELACIONADOS": "IDENTIFIANTS ASSOCIÉS",
-  "EVIDENCIAS DISPONIBLES": "PREUVES DISPONIBLES",
-  "CAPTURAS": "CAPTURES",
-  "JUSTIFICANTES": "JUSTIFICATIFS",
-  "MENSAJES": "MESSAGES",
-  "AUDIOS": "AUDIOS",
-  "VARIAS": "PLUSIEURS",
-  "NINGUNA": "AUCUNE",
-  "Ej.: 1250": "Ex. : 1250",
-  "Ej.: 3": "Ex. : 3",
-  "Ej.: Banco X": "Ex. : Banque X",
-  "IBAN, teléfono, email, URL, usuario...": "IBAN, téléphone, e-mail, URL, identifiant...",
 });
 
 window.QUESTION_FR = { UI_EN: UI_FR, UI_FR, GLOBAL_ROUTES, QUESTION_SETS, EXPORT_KEY_MAP };

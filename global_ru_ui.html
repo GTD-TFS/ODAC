@@ -896,65 +896,6 @@ function uiText(key){
 
 const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
 
-// === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
-const UI_ES_OVERRIDES = {
-  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO / PÉRDIDA",
-  "SUSTRACCIÓN": "🕵️ ROBO / HURTO",
-  "DAÑOS": "🧱 DAÑOS",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESTAFA / ESTAFA INFORMÁTICA",
-  "AGRESIÓN": "👊 AGRESIÓN",
-  "AMENAZAS": "🗣️ AMENAZAS",
-  "ALLANAMIENTO / USURPACIÓN": "🏠 ALLANAMIENTO / USURPACIÓN",
-  "APROPIACIÓN INDEBIDA": "📦 APROPIACIÓN INDEBIDA",
-  "COACCIONES": "🧷 COACCIONES",
-  "CARÁCTER SEXUAL": "🔒 CARÁCTER SEXUAL",
-  "DENUNCIA GENÉRICA": "🧩 DENUNCIA GENÉRICA"
-};
-
-const CHOICE_ICON_PREFIX = {
-  "EXTRAVÍO/PÉRDIDA": "🧳",
-  "SUSTRACCIÓN": "🕵️",
-  "DAÑOS": "🧱",
-  "ESTAFA / ESTAFA INFORMÁTICA": "💳",
-  "AGRESIÓN": "👊",
-  "AMENAZAS": "🗣️",
-  "ALLANAMIENTO / USURPACIÓN": "🏠",
-  "APROPIACIÓN INDEBIDA": "📦",
-  "COACCIONES": "🧷",
-  "CARÁCTER SEXUAL": "🔒",
-  "DENUNCIA GENÉRICA": "🧩"
-};
-
-function trUI(s){
-  if (typeof s !== "string" || !s) return s;
-  return UI_EN[s] || s;
-}
-
-function choiceLabel(opt){
-  const icon = CHOICE_ICON_PREFIX[opt] || "";
-  const label = trUI(opt);
-  if (icon && typeof label === "string" && label.trim().startsWith(icon)) return label;
-  return icon ? `${icon} ${label}` : label;
-}
-
-// --- COMPAPOL: filiación cifrada (password fijo) ---
-const __FILIACION_PASS = "adejegtd";
-
-function buildLabelPublicoFromFiliacion(f){
-  const nombre = ((f && f["Nombre"]) ? String(f["Nombre"]) : "").trim();
-  const ap = ((f && f["Apellidos"]) ? String(f["Apellidos"]) : "").trim();
-  const ap1 = (ap.split(/\s+/).filter(Boolean)[0] || "");
-  if (nombre && ap1) return `${nombre} ${ap1[0].toUpperCase()}.`;
-  return (nombre || ap1 || "(Sin nombre)");
-}
-
-function encryptFiliacionForCompapol(f){
-  if (!window.CryptoJS || !CryptoJS.AES) throw new Error("Falta CryptoJS (AES). No se puede cifrar.");
-  const plain = JSON.stringify(f || {});
-  const data = CryptoJS.AES.encrypt(plain, __FILIACION_PASS).toString();
-  return { meta_encrypted: true, data };
-}
-
 function applyTipoDocVisibility(){
   const sel = $("fTipoDoc");
   const box = document.getElementById("boxOtroDoc");
@@ -973,6 +914,25 @@ function normUp(s){
     .replace(new RegExp(mark, "g"), "Ñ")
     .toUpperCase().replace(/\s+/g," ").trim();
 }
+
+function trUI(s){
+  if (s === undefined || s === null) return "";
+  const k = String(s).trim();
+  if (!k) return "";
+  const kl = k.toLowerCase();
+  if (kl === "undefined" || kl === "null") return "";
+  const ku = normUp(k);
+  if (window.COUNTRIES_EN && typeof window.COUNTRIES_EN === "object"){
+    if (window.COUNTRIES_EN[k]) return window.COUNTRIES_EN[k];
+    for (const esName of Object.keys(window.COUNTRIES_EN)){
+      if (normUp(esName) === ku) return window.COUNTRIES_EN[esName];
+    }
+  }
+  if (UI_EN[k]) return UI_EN[k];                    // textos UI
+  return k;
+}
+
+
 
 function getAllPaises(){
   const out = [];
@@ -1614,7 +1574,7 @@ function makeStepEl(q){
     box.className = "choices pills";
 
     const current = (wiz.st[q.key] || "").trim();
-    const def = (q.options && q.options[0]) ? q.options[0] : "";
+    const def = (q.default && q.options && q.options.includes(q.default)) ? q.default : ((q.options && q.options[0]) ? q.options[0] : "");
     const initial = current || def;
     if (!wiz.st[q.key] && initial) wiz.st[q.key] = initial;
 
@@ -1622,7 +1582,7 @@ function makeStepEl(q){
       const b = document.createElement("button");
       b.type = "button";
       b.className = "choiceBtn";
-      b.textContent = choiceLabel(opt);
+      b.textContent = trUI(opt);
       b.dataset.value = opt;
       b.classList.toggle("isPicked", opt === wiz.st[q.key]);
       b.addEventListener("click", ()=>{
@@ -1651,7 +1611,7 @@ function makeStepEl(q){
 
     const w1 = document.createElement("div");
     const l1 = document.createElement("label");
-    l1.textContent = uiText("date_label");
+    l1.textContent = "Дата";
     const i1 = document.createElement("input");
     i1.type = "date";
     i1.id = "q_fecha";
@@ -1668,7 +1628,7 @@ function makeStepEl(q){
       // Dos campos independientes (DESDE / HASTA) para que siempre se vean.
       w2 = document.createElement("div");
       const l2a = document.createElement("label");
-      l2a.textContent = uiText("time_from_label");
+      l2a.textContent = "Время (с)";
       const i2a = document.createElement("input");
       i2a.type = "time";
       i2a.id = "q_hora_desde";
@@ -1682,7 +1642,7 @@ function makeStepEl(q){
 
       w2b = document.createElement("div");
       const l2b = document.createElement("label");
-      l2b.textContent = uiText("time_until_label");
+      l2b.textContent = "Время (до)";
       const i2b = document.createElement("input");
       i2b.type = "time";
       i2b.id = "q_hora_hasta";
@@ -1697,7 +1657,7 @@ function makeStepEl(q){
     } else {
       w2 = document.createElement("div");
       const l2 = document.createElement("label");
-      l2.textContent = uiText("time_label");
+      l2.textContent = "Время";
       const i2 = document.createElement("input");
       i2.type = "time";
       i2.id = "q_hora";
@@ -1712,7 +1672,7 @@ function makeStepEl(q){
 
       w2b = document.createElement("div");
       const l2b = document.createElement("label");
-      l2b.textContent = uiText("time_until_optional_label");
+      l2b.textContent = "Время (до, если это происходило в течение периода)";
       const i2b = document.createElement("input");
       i2b.type = "time";
       i2b.id = "q_hora_hasta_opt";
@@ -1728,7 +1688,7 @@ function makeStepEl(q){
     const w3 = document.createElement("div");
     w3.style.gridColumn = "1/-1";
     const l3 = document.createElement("label");
-    l3.textContent = uiText("place_label");
+    l3.textContent = "Место";
     const i3 = document.createElement("input");
     i3.type = "text";
     i3.id = "q_lugar";
@@ -1865,7 +1825,7 @@ function makeStepEl(q){
     const b = document.createElement("button");
     b.className = "btn secondary";
     b.type = "button";
-    b.textContent = trUI("AÑADIR / EDITAR AUTORES");
+    b.textContent = "ДОБАВИТЬ / ИЗМЕНИТЬ ЛИЦ";
     b.addEventListener("click", ()=> openAuthors(q.key));
     const c = document.createElement("div");
     c.className = "muted";
@@ -1907,7 +1867,8 @@ function makeStepEl(q){
       if (it.type === "select"){
         const sel = document.createElement("select");
         const options = Array.isArray(it.options) ? it.options : [];
-        if (!wiz.st[it.key] && options[0]) wiz.st[it.key] = options[0];
+        const initial = (it.default && options.includes(it.default)) ? it.default : options[0];
+        if (!wiz.st[it.key] && initial) wiz.st[it.key] = initial;
         sel.innerHTML = options.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
         sel.value = wiz.st[it.key] || "";
         sel.addEventListener("change", ()=>{
@@ -2300,7 +2261,7 @@ $("btnSaveObjs").addEventListener("click", ()=>{
 
 function openAuthors(key){
   currentAuthorsKey = key;
-  if (!Array.isArray(autoresStateByKey[key])) autoresStateByKey[key] = [];
+  if (!autoresStateByKey[currentAuthorsKey]) autoresStateByKey[currentAuthorsKey] = [];
   renderAuthors();
   const b = $("authorsBack");
   if (b) b.style.display = "flex";
@@ -2309,63 +2270,78 @@ function closeAuthors(){
   const b = $("authorsBack");
   if (b) b.style.display = "none";
 }
+function authorCard(author, idx){
+  const wrap = document.createElement("div");
+  wrap.className = "objCard";
+  const row1 = document.createElement("div");
+  row1.className = "grid";
+  const mkSel = (label, options, key)=>{
+    const w = document.createElement("div");
+    const l = document.createElement("label");
+    l.textContent = label;
+    const s = document.createElement("select");
+    s.innerHTML = options.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("");
+    s.value = author[key] || options[0];
+    s.addEventListener("change", ()=>{ author[key] = s.value; });
+    w.appendChild(l); w.appendChild(s);
+    return w;
+  };
+  row1.appendChild(mkSel("Пол", AUTOR_SEXO_OPTIONS, "sexo"));
+  row1.appendChild(mkSel("Возрастной диапазон", AUTOR_EDAD_OPTIONS, "edad_rango"));
+  row1.appendChild(mkSel("Телосложение", AUTOR_CONSTITUCION_OPTIONS, "constitucion"));
+  row1.appendChild(mkSel("Диапазон роста", AUTOR_ALTURA_OPTIONS, "altura_rango"));
+  wrap.appendChild(row1);
+
+  const row2 = document.createElement("div");
+  row2.className = "grid";
+  row2.style.marginTop = "8px";
+  const mkText = (label, key, ph)=>{
+    const w = document.createElement("div");
+    const l = document.createElement("label");
+    l.textContent = label;
+    const i = document.createElement("input");
+    i.type = "text";
+    i.placeholder = ph || "";
+    i.value = author[key] || "";
+    i.addEventListener("input", ()=>{ author[key] = i.value; });
+    w.appendChild(l); w.appendChild(i);
+    return w;
+  };
+  row2.appendChild(mkText("Верхняя одежда", "vestimenta_superior"));
+  row2.appendChild(mkText("Нижняя одежда", "vestimenta_inferior"));
+  row2.appendChild(mkText("Язык/акцент", "idioma_acento"));
+  row2.appendChild(mkText("Особая примета", "rasgo_distintivo"));
+  wrap.appendChild(row2);
+
+  const row3 = document.createElement("div");
+  row3.className = "row";
+  row3.style.justifyContent = "flex-end";
+  row3.style.marginTop = "8px";
+  const del = document.createElement("button");
+  del.className = "btn danger";
+  del.type = "button";
+  del.textContent = "X";
+  del.addEventListener("click", ()=>{
+    autoresStateByKey[currentAuthorsKey].splice(idx,1);
+    renderAuthors();
+  });
+  row3.appendChild(del);
+  wrap.appendChild(row3);
+  return wrap;
+}
 function renderAuthors(){
   const list = $("authorsList");
   if (!list) return;
-  const arr = autoresStateByKey[currentAuthorsKey] || [];
   list.innerHTML = "";
+  const arr = autoresStateByKey[currentAuthorsKey] || [];
   if (!arr.length){
     const empty = document.createElement("div");
     empty.className = "muted";
-    empty.textContent = uiText("no_authors");
+    empty.textContent = "Нет лиц.";
     list.appendChild(empty);
     return;
   }
-  arr.forEach((a, idx)=>{
-    const card = document.createElement("div");
-    card.className = "objCard";
-    const grid = document.createElement("div");
-    grid.className = "grid";
-    const mkSel = (labelTxt, opts, val, onChange)=>{
-      const w = document.createElement("div");
-      const l = document.createElement("label"); l.textContent = labelTxt;
-      const s = document.createElement("select");
-      s.innerHTML = `<option value=""></option>${opts.map(v=>`<option value="${v}">${trUI(v)}</option>`).join("")}`;
-      s.value = val || "";
-      s.addEventListener("change", ()=> onChange(s.value));
-      w.appendChild(l); w.appendChild(s);
-      return w;
-    };
-    const mkInp = (labelTxt, ph, val, onChange)=>{
-      const w = document.createElement("div");
-      const l = document.createElement("label"); l.textContent = labelTxt;
-      const i = document.createElement("input");
-      i.type = "text"; i.placeholder = ph || ""; i.value = val || "";
-      i.addEventListener("input", ()=> onChange(i.value));
-      w.appendChild(l); w.appendChild(i);
-      return w;
-    };
-    grid.appendChild(mkSel(uiText("sex_label"), AUTOR_SEXO_OPTIONS, a.sexo, (v)=>a.sexo=v));
-    grid.appendChild(mkSel(uiText("age_range_label"), AUTOR_EDAD_OPTIONS, a.edad_rango, (v)=>a.edad_rango=v));
-    grid.appendChild(mkSel(uiText("build_label"), AUTOR_CONSTITUCION_OPTIONS, a.constitucion, (v)=>a.constitucion=v));
-    grid.appendChild(mkSel(uiText("height_label"), AUTOR_ALTURA_OPTIONS, a.altura_rango, (v)=>a.altura_rango=v));
-    grid.appendChild(mkInp(uiText("top_clothing_label"), uiText("top_clothing_placeholder"), a.vestimenta_superior, (v)=>a.vestimenta_superior=v));
-    grid.appendChild(mkInp(uiText("bottom_clothing_label"), uiText("bottom_clothing_placeholder"), a.vestimenta_inferior, (v)=>a.vestimenta_inferior=v));
-    grid.appendChild(mkInp(uiText("language_accent_label"), uiText("language_accent_placeholder"), a.idioma_acento, (v)=>a.idioma_acento=v));
-    grid.appendChild(mkInp(uiText("distinctive_feature_label"), uiText("distinctive_feature_placeholder"), a.rasgo_distintivo, (v)=>a.rasgo_distintivo=v));
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.type = "button";
-    del.textContent = uiText("delete_label");
-    del.addEventListener("click", ()=>{
-      arr.splice(idx, 1);
-      autoresStateByKey[currentAuthorsKey] = arr;
-      renderAuthors();
-    });
-    card.appendChild(grid);
-    card.appendChild(del);
-    list.appendChild(card);
-  });
+  arr.forEach((a,idx)=> list.appendChild(authorCard(a,idx)));
 }
 function normalizeAuthorsByKey(key){
   const arr = Array.isArray(autoresStateByKey[key]) ? autoresStateByKey[key] : [];
@@ -2380,16 +2356,15 @@ function normalizeAuthorsByKey(key){
     (a.rasgo_distintivo||"").trim()
   );
 }
-$("btnCloseAuthors").addEventListener("click", closeAuthors);
-$("authorsBack").addEventListener("click", (e)=>{ if (e.target === $("authorsBack")) closeAuthors(); });
-$("btnAddAuthor").addEventListener("click", ()=>{
-  if (!currentAuthorsKey) return;
-  if (!Array.isArray(autoresStateByKey[currentAuthorsKey])) autoresStateByKey[currentAuthorsKey] = [];
+$("btnЗакрытьAuthors")?.addEventListener("click", closeAuthors);
+$("authorsBack")?.addEventListener("click", (e)=>{ if (e.target === $("authorsBack")) closeAuthors(); });
+$("btnAddAuthor")?.addEventListener("click", ()=>{
+  if (!autoresStateByKey[currentAuthorsKey]) autoresStateByKey[currentAuthorsKey] = [];
   autoresStateByKey[currentAuthorsKey].push({
-    sexo: "",
-    edad_rango: "",
-    constitucion: "",
-    altura_rango: "",
+    sexo: "NO DETERMINADO",
+    edad_rango: "30-40",
+    constitucion: "NO DETERMINADA",
+    altura_rango: "NO DETERMINADA",
     vestimenta_superior: "",
     vestimenta_inferior: "",
     idioma_acento: "",
@@ -2397,10 +2372,10 @@ $("btnAddAuthor").addEventListener("click", ()=>{
   });
   renderAuthors();
 });
-$("btnSaveAuthors").addEventListener("click", ()=>{
+$("btnSaveAuthors")?.addEventListener("click", ()=>{
   if (!currentAuthorsKey) return closeAuthors();
   normalizeAuthorsByKey(currentAuthorsKey);
-  renderWizard(); // refresca el contador visible del bloque authors
+  renderWizard(); // refresh visible counter for the authors step
   closeAuthors();
 });
 
@@ -2437,14 +2412,18 @@ function refreshPersonalPhaseUI(){
 async function getShareTargets(){
   if (!shareTargetsPromise){
     shareTargetsPromise = (async ()=>{
-      if (!token) return {};
+      const normalizeTargets = (data)=> ({
+        whatsapp: String(data?.shareWhatsappTarget || data?.whatsapp || "").trim(),
+        email: String(data?.shareEmailTarget || data?.email || "").trim()
+      });
       try{
-        const snap = await getDoc(doc(db, "tokenSessions", token));
-        const data = snap.exists() ? (snap.data() || {}) : {};
-        return {
-          whatsapp: String(data.shareWhatsappTarget || "").trim(),
-          email: String(data.shareEmailTarget || "").trim()
-        };
+        if (token){
+          const snap = await getDoc(doc(db, "tokenSessions", token));
+          const sessionTargets = normalizeTargets(snap.exists() ? (snap.data() || {}) : {});
+          if (sessionTargets.whatsapp || sessionTargets.email) return sessionTargets;
+        }
+        const defaultsSnap = await getDoc(doc(db, "appConfig", "shareDefaults"));
+        return normalizeTargets(defaultsSnap.exists() ? (defaultsSnap.data() || {}) : {});
       }catch(_){
         return {};
       }

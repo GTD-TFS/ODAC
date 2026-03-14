@@ -849,12 +849,13 @@ const tipo = (qs.get("tipo")||"PATRIMONIO").trim().toUpperCase();
 
 // === UI: overrides de etiqueta (solo visual; NO cambia valores internos) ===
 const UI_ES_OVERRIDES = {
-  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO / PÉRDIDA",
+  "EXTRAVÍO/PÉRDIDA": "🧳 EXTRAVÍO/PÉRDIDA",
   "SUSTRACCIÓN": "🕵️ ROBO / HURTO",
   "DAÑOS": "🧱 DAÑOS",
   "ESTAFA / ESTAFA INFORMÁTICA": "💳 ESTAFA / ESTAFA INFORMÁTICA",
   "AGRESIÓN": "👊 AGRESIÓN",
   "AMENAZAS": "🗣️ AMENAZAS",
+  "OTRO TIPO DE HECHO": "➡️ OTRO TIPO DE HECHO",
   "ALLANAMIENTO / USURPACIÓN": "🏠 ALLANAMIENTO / USURPACIÓN",
   "APROPIACIÓN INDEBIDA": "📦 APROPIACIÓN INDEBIDA",
   "COACCIONES": "🧷 COACCIONES",
@@ -1539,7 +1540,7 @@ function makeStepEl(q){
     box.className = "choices pills";
 
     const current = (wiz.st[q.key] || "").trim();
-    const def = (q.options && q.options[0]) ? q.options[0] : "";
+    const def = (q.default && q.options && q.options.includes(q.default)) ? q.default : ((q.options && q.options[0]) ? q.options[0] : "");
     const initial = current || def;
     if (!wiz.st[q.key] && initial) wiz.st[q.key] = initial;
 
@@ -1833,7 +1834,8 @@ function makeStepEl(q){
       if (it.type === "select"){
         const sel = document.createElement("select");
         const options = Array.isArray(it.options) ? it.options : [];
-        if (!wiz.st[it.key] && options[0]) wiz.st[it.key] = options[0];
+        const initial = (it.default && options.includes(it.default)) ? it.default : options[0];
+        if (!wiz.st[it.key] && initial) wiz.st[it.key] = initial;
         sel.innerHTML = options.map(v=>`<option value="${v}">${v}</option>`).join("");
         sel.value = wiz.st[it.key] || "";
         sel.addEventListener("change", ()=>{
@@ -1845,7 +1847,7 @@ function makeStepEl(q){
         if (!inputEl) inputEl = sel;
       } else if (it.type === "textarea"){
         const ta = document.createElement("textarea");
-        ta.placeholder = trUI(it.placeholder || "");
+        ta.placeholder = it.placeholder || "";
         if (it.max) ta.maxLength = it.max;
         ta.value = wiz.st[it.key] || "";
         ta.addEventListener("input", ()=>{ wiz.st[it.key] = ta.value; refreshItemVisibility(); });
@@ -1861,7 +1863,7 @@ function makeStepEl(q){
       } else {
         const inp = document.createElement("input");
         inp.type = "text";
-        inp.placeholder = trUI(it.placeholder || "");
+        inp.placeholder = it.placeholder || "";
         inp.value = wiz.st[it.key] || "";
         inp.addEventListener("input", ()=>{ wiz.st[it.key] = inp.value; refreshItemVisibility(); });
         w.appendChild(inp);
@@ -2353,14 +2355,18 @@ function refreshPersonalPhaseUI(){
 async function getShareTargets(){
   if (!shareTargetsPromise){
     shareTargetsPromise = (async ()=>{
-      if (!token) return {};
+      const normalizeTargets = (data)=> ({
+        whatsapp: String(data?.shareWhatsappTarget || data?.whatsapp || "").trim(),
+        email: String(data?.shareEmailTarget || data?.email || "").trim()
+      });
       try{
-        const snap = await getDoc(doc(db, "tokenSessions", token));
-        const data = snap.exists() ? (snap.data() || {}) : {};
-        return {
-          whatsapp: String(data.shareWhatsappTarget || "").trim(),
-          email: String(data.shareEmailTarget || "").trim()
-        };
+        if (token){
+          const snap = await getDoc(doc(db, "tokenSessions", token));
+          const sessionTargets = normalizeTargets(snap.exists() ? (snap.data() || {}) : {});
+          if (sessionTargets.whatsapp || sessionTargets.email) return sessionTargets;
+        }
+        const defaultsSnap = await getDoc(doc(db, "appConfig", "shareDefaults"));
+        return normalizeTargets(defaultsSnap.exists() ? (defaultsSnap.data() || {}) : {});
       }catch(_){
         return {};
       }
