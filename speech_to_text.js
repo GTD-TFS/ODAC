@@ -1,10 +1,15 @@
 (function(){
   const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const RESTART_BASE_DELAY_MS = 700;
+  const RESTART_MAX_DELAY_MS = 2500;
+  const MIN_START_GAP_MS = 450;
+  const FATAL_ERRORS = new Set(["not-allowed", "service-not-allowed", "audio-capture", "network"]);
   const I18N = {
     es: {
       start: "Iniciar dictado",
       stop: "Detener dictado",
       listening: "Escuchando...",
+      reconnecting: "Reconectando microfono...",
       processing: "Procesando voz...",
       ready: "Texto de voz incorporado.",
       unsupported: "El dictado por voz no está disponible en este dispositivo.",
@@ -18,6 +23,7 @@
       start: "Start dictation",
       stop: "Stop dictation",
       listening: "Listening...",
+      reconnecting: "Reconnecting microphone...",
       processing: "Processing voice...",
       ready: "Voice text inserted.",
       unsupported: "Voice dictation is not available on this device.",
@@ -31,6 +37,7 @@
       start: "Diktat starten",
       stop: "Diktat stoppen",
       listening: "Spracheingabe läuft...",
+      reconnecting: "Mikrofon wird neu verbunden...",
       processing: "Sprache wird verarbeitet...",
       ready: "Gesprochener Text eingefügt.",
       unsupported: "Spracheingabe ist auf diesem Gerät nicht verfügbar.",
@@ -44,6 +51,7 @@
       start: "Avvia dettatura",
       stop: "Ferma dettatura",
       listening: "In ascolto...",
+      reconnecting: "Ricollegamento microfono...",
       processing: "Elaborazione voce...",
       ready: "Testo vocale inserito.",
       unsupported: "La dettatura vocale non e disponibile su questo dispositivo.",
@@ -57,6 +65,7 @@
       start: "Demarrer la dictee",
       stop: "Arreter la dictee",
       listening: "Ecoute en cours...",
+      reconnecting: "Reconnexion du micro...",
       processing: "Traitement de la voix...",
       ready: "Texte vocal insere.",
       unsupported: "La dictee vocale n'est pas disponible sur cet appareil.",
@@ -70,6 +79,7 @@
       start: "Начать диктовку",
       stop: "Остановить диктовку",
       listening: "Идет прослушивание...",
+      reconnecting: "Повторное подключение микрофона...",
       processing: "Обработка речи...",
       ready: "Распознанный текст добавлен.",
       unsupported: "Голосовой ввод недоступен на этом устройстве.",
@@ -83,6 +93,7 @@
       start: "开始语音输入",
       stop: "停止语音输入",
       listening: "正在监听...",
+      reconnecting: "正在重新连接麦克风...",
       processing: "正在处理语音...",
       ready: "语音文字已插入。",
       unsupported: "此设备不支持语音输入。",
@@ -96,6 +107,7 @@
       start: "音声入力を開始",
       stop: "音声入力を停止",
       listening: "音声を聞き取っています...",
+      reconnecting: "マイクを再接続しています...",
       processing: "音声を処理しています...",
       ready: "音声テキストを挿入しました。",
       unsupported: "この端末では音声入力を利用できません。",
@@ -108,7 +120,6 @@
   };
 
   let activeSession = null;
-  const RESTART_DELAY_MS = 250;
 
   function normalizeLang(lang){
     const value = String(lang || document.documentElement.lang || "es").toLowerCase();
@@ -164,6 +175,11 @@
     return t(lang, map[code] || "error_generic");
   }
 
+  function syncTextarea(textarea, value){
+    textarea.value = value;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   function composeValue(session, interimText){
     const parts = [];
     const baseText = String(session.baseText || "").trim();
@@ -173,11 +189,6 @@
     if (finalText) parts.push(finalText);
     if (interim) parts.push(interim);
     return parts.join("\n").trim();
-  }
-
-  function syncTextarea(textarea, value){
-    textarea.value = value;
-    textarea.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function refreshButton(session){
@@ -192,13 +203,35 @@
     session.restartTimer = null;
   }
 
+  function resetSessionForFreshStart(session){
+    session.baseText = String(session.textarea.value || "").trim();
+    session.finalText = "";
+    session.lastError = "";
+    session.fatalError = false;
+    session.restartAttempts = 0;
+    session.manualStop = false;
+    session.shouldContinue = true;
+  }
+
+  function stopCurrentRecognition(session, useAbort){
+    if (!session || !session.recognition) return;
+    try{
+      if (useAbort) session.recognition.abort();
+      else session.recognition.stop();
+    }catch(_){}
+  }
+
   function scheduleRestart(session){
-    if (!session || !session.shouldContinue || session.manualStop) return;
+    if (!session || !session.shouldContinue || session.manualStop || session.fatalError) return;
     clearRestartTimer(session);
+    const attempt = session.restartAttempts || 0;
+    const delay = Math.min(RESTART_BASE_DELAY_MS * Math.pow(1.6, attempt), RESTART_MAX_DELAY_MS);
+    session.restartAttempts = attempt + 1;
+    if (session.status) session.status.textContent = t(session.lang, "reconnecting");
     session.restartTimer = setTimeout(function(){
-      if (!session.shouldContinue || session.manualStop) return;
+      if (!session.shouldContinue || session.manualStop || session.fatalError) return;
       start(session);
-    }, RESTART_DELAY_MS);
+    }, delay);
   }
 
   function stop(options){
@@ -206,18 +239,16 @@
     if (!session) return;
     session.shouldContinue = false;
     session.manualStop = true;
+    session.fatalError = false;
     clearRestartTimer(session);
-    session.closing = true;
     if (session.status && typeof (options && options.message) === "string"){
       session.status.textContent = options.message;
     }
-    try{
-      if (options && options.abort) session.recognition.abort();
-      else session.recognition.stop();
-    }catch(_){}
+    stopCurrentRecognition(session, !!(options && options.abort));
+    session.listening = false;
+    session.starting = false;
+    refreshButton(session);
     if (options && options.immediate){
-      session.listening = false;
-      refreshButton(session);
       activeSession = null;
     }
   }
@@ -229,20 +260,24 @@
       return;
     }
 
-    if (activeSession && activeSession.listening){
+    const now = Date.now();
+    if (session.starting || session.listening) return;
+    if (now - session.lastStartAt < MIN_START_GAP_MS){
+      scheduleRestart(session);
+      return;
+    }
+
+    if (activeSession && activeSession !== session){
       stop({ abort: true, immediate: true });
     }
 
+    clearRestartTimer(session);
+    session.starting = true;
+    session.lastError = "";
+    session.lastStartAt = now;
+
     const recognition = new SpeechRecognitionCtor();
     session.recognition = recognition;
-    if (!session.shouldContinue){
-      session.baseText = String(session.textarea.value || "").trim();
-      session.finalText = "";
-    }
-    session.listening = false;
-    session.closing = false;
-    session.hadError = false;
-    session.lastError = "";
     activeSession = session;
 
     recognition.lang = localeForSpeech(session.lang);
@@ -251,8 +286,9 @@
     recognition.maxAlternatives = 1;
 
     recognition.onstart = function(){
+      session.starting = false;
       session.listening = true;
-      clearRestartTimer(session);
+      session.restartAttempts = 0;
       refreshButton(session);
       if (session.status) session.status.textContent = t(session.lang, "listening");
     };
@@ -276,40 +312,50 @@
 
     recognition.onerror = function(event){
       if (activeSession !== session) return;
-      session.lastError = String(event.error || "");
-      session.hadError = !["no-speech", "aborted"].includes(session.lastError);
+      session.starting = false;
       session.listening = false;
+      session.lastError = String(event.error || "");
+      session.fatalError = FATAL_ERRORS.has(session.lastError);
       refreshButton(session);
+
+      if (session.lastError === "aborted" && session.manualStop) return;
       if (session.lastError === "no-speech"){
-        if (session.status) session.status.textContent = t(session.lang, "listening");
+        if (session.status) session.status.textContent = t(session.lang, "reconnecting");
         return;
       }
-      if (session.lastError === "aborted" && session.manualStop){
-        return;
-      }
-      if (session.status) session.status.textContent = speechErrorMessage(session.lang, event.error);
-      if (["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(session.lastError)){
+      if (session.status) session.status.textContent = speechErrorMessage(session.lang, session.lastError);
+      if (session.fatalError){
         session.shouldContinue = false;
       }
     };
 
     recognition.onend = function(){
       if (activeSession !== session) return;
+      session.starting = false;
       session.listening = false;
       refreshButton(session);
-      if (session.shouldContinue && !session.manualStop){
-        if (session.status) session.status.textContent = t(session.lang, "listening");
-        activeSession = null;
+
+      if (session.shouldContinue && !session.manualStop && !session.fatalError){
         scheduleRestart(session);
         return;
       }
-      if (!session.hadError && session.status){
+
+      if (!session.manualStop && !session.fatalError && session.status){
         session.status.textContent = session.finalText ? t(session.lang, "ready") : "";
       }
       activeSession = null;
     };
 
-    recognition.start();
+    try{
+      recognition.start();
+    }catch(err){
+      session.starting = false;
+      session.listening = false;
+      session.lastError = String(err && err.name || "start-failed");
+      refreshButton(session);
+      if (session.status) session.status.textContent = t(session.lang, "reconnecting");
+      scheduleRestart(session);
+    }
   }
 
   function attach(options){
@@ -338,13 +384,15 @@
       recognition: null,
       baseText: "",
       finalText: "",
-      restartTimer: null,
-      listening: false,
-      closing: false,
-      hadError: false,
       lastError: "",
+      restartTimer: null,
+      restartAttempts: 0,
       shouldContinue: false,
-      manualStop: false
+      manualStop: false,
+      fatalError: false,
+      starting: false,
+      listening: false,
+      lastStartAt: 0
     };
 
     if (!SpeechRecognitionCtor){
@@ -354,13 +402,12 @@
 
     button.addEventListener("click", function(){
       if (!SpeechRecognitionCtor) return;
-      if (activeSession && activeSession.button === button && activeSession.listening){
+      if (activeSession === session && (session.listening || session.starting || session.shouldContinue)){
         stop({ message: t(lang, "processing") });
         return;
       }
-      session.shouldContinue = true;
-      session.manualStop = false;
-      clearRestartTimer(session);
+      resetSessionForFreshStart(session);
+      refreshButton(session);
       start(session);
     });
 
