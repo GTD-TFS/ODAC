@@ -1056,14 +1056,15 @@
       return created + (8 * 60 * 60 * 1000);
     }
     function getPredenunciaExpiryMs(d) {
-      const explicitExp = tsToMs(d && (d.tokenExpiresAt || d.expiresAt));
+      const sessionMeta = tokenSessionMetaFor(d);
+      const explicitExp = tsToMs((sessionMeta && sessionMeta.expiresAt) || (d && d.expiresAt));
       if (explicitExp > 0) return explicitExp;
 
       const finMs = tsToMs(d && d.finalizedAt);
       if (finMs > 0) return finMs + (8 * 60 * 60 * 1000);
 
       const baseMs = Math.max(
-        tsToMs(d && d.tokenCreatedAt),
+        tsToMs(sessionMeta && sessionMeta.createdAt),
         tsToMs(d && d.startedAt),
         tsToMs(d && d.createdAt)
       );
@@ -1212,6 +1213,7 @@
     const state = {
       // predenuncias
       denuncias: [],
+      tokenSessions: {},
       selected: null, // {id, labelPublico, sexoPublico, tipo, filiacionEnc, hechosJson, docText}
 
       // registros (archivos JSON cifrados)
@@ -1232,6 +1234,7 @@
       userUid: null
     };
     let __unsubSelectedPred = null;
+    let __unsubTokenSessions = null;
 
     function stopSelectedPredListener() {
       if (!__unsubSelectedPred) return;
@@ -1239,6 +1242,22 @@
       __unsubSelectedPred = null;
     }
 
+    function langFromCrimeType(tipo) {
+      const key = String(tipo || "").trim().toUpperCase();
+      if (key === "GLOBAL INGLES") return "en";
+      if (key === "GLOBAL FRANCES") return "fr";
+      if (key === "GLOBAL ALEMAN") return "de";
+      if (key === "GLOBAL ITALIANO") return "it";
+      if (key === "GLOBAL RUSO") return "ru";
+      if (key === "GLOBAL JAPONES") return "ja";
+      if (key === "GLOBAL CHINO") return "zh";
+      return "es";
+    }
+    function tokenSessionMetaFor(d) {
+      const token = String((d && d.token) || "").trim();
+      if (!token) return null;
+      return state.tokenSessions[token] || null;
+    }
     function mapPredenunciaDoc(d) {
       const x = d.data() || {};
       const labelPublico = (x.label_publico || x.labelPublico || x.reportCode || x.codigo || "").toString().trim();
@@ -1246,10 +1265,10 @@
 
       return {
         id: d.id,
+        token: (x.token || d.id || "").toString().trim(),
         codigo,
         estado: (x.estado || "").toString().toUpperCase() || "FINALIZADA",
         tipo: (x.tipo || x.crimeType || "").toString().toUpperCase() || "PATRIMONIO",
-        lang: (x.lang || "es").toString().trim().toLowerCase() || "es",
         labelPublico,
         sexoPublico: "",
         filiacionEnc: null,
@@ -1257,19 +1276,41 @@
         hechosJson: (x.hechos || {}),
         docText: (x.docText || x.doc || ""),
         createdAt: x.createdAt || null,
-        tokenCreatedAt: x.tokenCreatedAt || null,
-        tokenExpiresAt: x.tokenExpiresAt || null,
         startedAt: x.startedAt || null,
         lastUpdatedAt: x.lastUpdatedAt || null,
         finalizedAt: x.finalizedAt || null
       };
+    }
+    function startTokenSessionsListener() {
+      const q = query(collection(db, "tokenSessions"), limit(500));
+      return onSnapshot(q, (snap) => {
+        const next = {};
+        snap.forEach((d) => {
+          const x = d.data() || {};
+          next[d.id] = {
+            crimeType: String(x.crimeType || "").trim(),
+            lang: langFromCrimeType(x.crimeType),
+            createdAt: x.createdAt || null,
+            expiresAt: x.expiresAt || null
+          };
+        });
+        state.tokenSessions = next;
+        if (state.mode === "predenuncias") renderDenuncias();
+        if (state.selected) {
+          const nx = state.denuncias.find((z) => z.id === state.selected.id);
+          if (nx) syncSelectedPredIntoState(nx);
+        }
+      }, (err) => {
+        console.warn("onSnapshot tokenSessions error", err);
+      });
     }
 
     function syncSelectedPredIntoState(nextSelected) {
       if (!nextSelected) return;
       state.selected = nextSelected;
       state.denuncias = state.denuncias.map((item) => item.id === nextSelected.id ? nextSelected : item);
-      $("selectedRef").textContent = `${nextSelected.labelPublico || nextSelected.codigo || nextSelected.id} ${flagForLang(nextSelected.lang)}`;
+      const sessionMeta = tokenSessionMetaFor(nextSelected);
+      $("selectedRef").textContent = `${nextSelected.labelPublico || nextSelected.codigo || nextSelected.id} ${flagForLang((sessionMeta && sessionMeta.lang) || "es")}`;
       renderSelectedIntoArea();
       refreshActions();
       if (state.mode === "predenuncias") renderDenuncias();
@@ -1578,7 +1619,8 @@
         left.className = "left";
         const icon = "🧾";
         const titulo = d.labelPublico || d.codigo || d.id;
-        const flag = flagForLang(d.lang);
+        const sessionMeta = tokenSessionMetaFor(d);
+        const flag = flagForLang((sessionMeta && sessionMeta.lang) || "es");
         const estadoTxt = d.estado === "FINALIZADA" ? "FINALIZADA" : "INICIADA";
         const estadoColor = d.estado === "FINALIZADA" ? "#22c55e" : "#f59e0b";
         left.innerHTML = `<div class="t">${icon} ${escapeHtml(titulo)} <span aria-label="Idioma">${flag}</span></div><div class="mono" style="opacity:.8;color:${estadoColor}">${estadoTxt} · ${escapeHtml(d.tipo || "")}</div>`;
@@ -1632,7 +1674,8 @@
       startSelectedPredListener(d.id);
       state.dirtyDoc = false;
 
-      $("selectedRef").textContent = `${d.labelPublico || d.codigo || d.id} ${flagForLang(d.lang)}`;
+      const sessionMeta = tokenSessionMetaFor(d);
+      $("selectedRef").textContent = `${d.labelPublico || d.codigo || d.id} ${flagForLang((sessionMeta && sessionMeta.lang) || "es")}`;
       $("workStatus").textContent = "";
       renderSelectedIntoArea();
       refreshActions();
@@ -2216,6 +2259,7 @@
         refreshActions();
         setView("json");
         if (!__unsubPred) __unsubPred = startFirestoreListener();
+        if (!__unsubTokenSessions) __unsubTokenSessions = startTokenSessionsListener();
         state.userUid = effectiveUser.uid || null;
         if (!__unsubRegs && state.userUid) __unsubRegs = startRegistrosListener(state.userUid);
         if (!__unsubInbox && state.userUid) __unsubInbox = startInboxListener(state.userUid);
@@ -2237,6 +2281,7 @@
         }
       } else {
         if (__unsubPred) { try { __unsubPred(); } catch (_) { } __unsubPred = null; }
+        if (__unsubTokenSessions) { try { __unsubTokenSessions(); } catch (_) { } __unsubTokenSessions = null; }
         if (__unsubRegs) { try { __unsubRegs(); } catch (_) { } __unsubRegs = null; }
         if (__unsubInbox) { try { __unsubInbox(); } catch (_) { } __unsubInbox = null; }
         stopSelectedPredListener();
@@ -2244,6 +2289,7 @@
         if (__housekeepingTimer) { try { clearInterval(__housekeepingTimer); } catch (_) { } __housekeepingTimer = null; }
         state.selected = null;
         state.denuncias = [];
+        state.tokenSessions = {};
         state.view = "json";
         state.dirtyDoc = false;
         state.registros = [];

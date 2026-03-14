@@ -2550,13 +2550,10 @@ async function saveInitialPredenuncia(){
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    lang: __MAP_LANG,
     label_publico: reportCode,
     sexo_publico: "",
     filiacion: {},
     hechos: p.hechos,
-    tokenCreatedAt: tokenSessionCreatedAt || null,
-    tokenExpiresAt: tokenSessionExpiryAt || null,
     createdAt: serverTimestamp(),
     startedAt: serverTimestamp(),
     lastUpdatedAt: serverTimestamp()
@@ -2579,13 +2576,10 @@ async function syncStartedPredenuncia(force = false){
     estado: "INICIADA",
     tipo: currentTipoFinal(),
     token,
-    lang: __MAP_LANG,
     label_publico: reportCode,
     sexo_publico: "",
     filiacion: {},
     hechos: p.hechos,
-    tokenCreatedAt: tokenSessionCreatedAt || null,
-    tokenExpiresAt: tokenSessionExpiryAt || null,
     lastUpdatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -2605,14 +2599,11 @@ async function saveFinal(){
       estado: "FINALIZADA",
       tipo: currentTipoFinal(),
       token,
-      lang: __MAP_LANG,
       label_publico: reportCode,
       sexo_publico: "",
       filiacion: {},
       hechos: p.hechos,
       doc: docText,
-      tokenCreatedAt: tokenSessionCreatedAt || null,
-      tokenExpiresAt: tokenSessionExpiryAt || null,
       lastUpdatedAt: serverTimestamp(),
       finalizedAt: serverTimestamp()
     }, { merge: true });
