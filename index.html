@@ -2155,16 +2155,19 @@
     async function loadShareDefaults() {
       try {
         const snap = await getDoc(doc(db, "appConfig", "shareDefaults"));
+        if (!snap.exists()) throw new Error("Falta appConfig/shareDefaults");
         const data = snap.exists() ? (snap.data() || {}) : {};
-        return {
+        const out = {
           shareWhatsappTarget: String(data.shareWhatsappTarget || "").trim(),
           shareEmailTarget: String(data.shareEmailTarget || "").trim()
         };
-      } catch (_) {
-        return {
-          shareWhatsappTarget: "",
-          shareEmailTarget: ""
-        };
+        if (!out.shareWhatsappTarget || !out.shareEmailTarget) {
+          throw new Error("Destinatarios por defecto incompletos");
+        }
+        return out;
+      } catch (err) {
+        console.warn("No se pudo cargar appConfig/shareDefaults", err);
+        throw err;
       }
     }
 
@@ -2177,7 +2180,13 @@
       const id = `P-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       const purgeAt = purgeAtToday2359();
       const link = await buildDenuncianteLink(tipo, token);
-      const shareDefaults = await loadShareDefaults();
+      let shareDefaults;
+      try {
+        shareDefaults = await loadShareDefaults();
+      } catch (_) {
+        alert("No se han podido cargar los destinatarios por defecto de WhatsApp y Email. Revisa appConfig/shareDefaults o sus permisos antes de generar el enlace.");
+        return;
+      }
 
       // Crea la sesión del token en Firestore para que el denunciante pueda FINALIZAR
       // expiresAt debe ser Timestamp (no string)
