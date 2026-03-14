@@ -441,8 +441,12 @@
     body.noScroll .wrap{padding:4px}
     body.noScroll .card{padding:4px 4px 2px}
     body.noScroll .navRow{padding-top:2px}
-    body.noScroll #dynSteps{overflow:hidden}
-    body.noScroll .stepPanel{overflow:hidden}
+    body.noScroll #dynSteps{overflow-y:auto;overflow-x:hidden}
+    body.noScroll .stepPanel{
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding-bottom:calc(122px + env(safe-area-inset-bottom));
+    }
     .step[data-key="caracteristica_hecho"] .choices.pills,
     .step[data-key="caracteristica_hecho_p2"] .choices.pills{
       grid-template-columns:1fr;
